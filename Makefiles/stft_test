@@ -1,0 +1,31 @@
+# Compiler and flags
+CC = gcc
+CFLAGS = -Wall -Wextra -O3 -march=native -funroll-loops
+
+# STFT test executable
+TARGET  = Makefiles/bins/test_stft
+SOURCES = tests/test_stft.c src/stft/audio_tools.c
+HEADERS = src/stft/audio_tools.h
+OBJECTS = $(SOURCES:.c=.o)
+LDFLAGS = -lm -lfftw3 -lsndfile
+
+# Default rule
+all: $(TARGET)
+
+# Build the STFT test executable
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
+
+# Compile source files into object files
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Run the STFT test executable
+run:
+	./$(TARGET)
+
+# Clean up build artifacts
+clean:
+	rm -f $(TARGET) $(OBJECTS)
+
+.PHONY: all test clean
