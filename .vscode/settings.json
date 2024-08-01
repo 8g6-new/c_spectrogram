@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "string.h": "c",
+        "cmath": "c",
+        "stdlib.h": "c",
+        "heatmap.h": "c",
+        "png_tools.h": "c",
+        "chrono": "c"
+    }
+}
