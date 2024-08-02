@@ -18,6 +18,8 @@
         float *magnitudes;
         float *phases;
         float *infos;
+        float phase[2];
+        float mag[2];
         unsigned short int *info_indexes;
         float *fft_times;
     } STFTResult;

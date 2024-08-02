@@ -37,7 +37,7 @@ void free_memory(float **filterbank, size_t num_filters, unsigned char *heatmap,
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 6) {
+    if (argc != 7) {
         fprintf(stderr, "Usage: %s <filename> <window_size> <hop_size> <window_type> <number_of_mel_banks>\n", argv[0]);
         return 1;
     }
@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
     int hop_size = atoi(argv[3]);
     const char *window_type = argv[4];
     unsigned short int num_filters = (unsigned short int)atoi(argv[5]);
+    const char *output_file = argv[6];
 
     if (window_size <= 0 || hop_size <= 0 || num_filters <= 0) {
         fprintf(stderr, "Window size, hop size, and number of mel banks must be positive integers.\n");
@@ -98,29 +99,29 @@ int main(int argc, char *argv[]) {
     memset(heatmap, 0, w * h * 4);
 
     for (size_t i = 0; i < w; i++) {
+
         for (size_t j = 0; j < h; j++) {
             size_t index = i * h + (h - j - 1);  // Corrected indexing
 
             float phase = result.phases[index];
-            float mag = result.magnitudes[index];
-            phase = sqrt(cos(phase) * cos(phase));
+            float mag   = result.magnitudes[index];
 
-            // float sum = 0.0;  // Reset sum for each pixel
-            // for (size_t filter = 0; filter < num_filters; filter++) {
-            //     sum += mag * mag * filterbank[filter][bin];
-            // }
+            mag = (mag-result.mag[0])/result.mag[1];
+            
+            unsigned char n = (int)(((phase -  result.phase[0])) * 255 / (( result.phase[1]- result.phase[0])));
 
-            heatmap_add_weighted_point(hm, i, j, mag);
+            heatmap[i* j * 4 + 3] =  n; 
+            heatmap_add_weighted_point(hm, i, j,mag);
         }
     }
 
     heatmap_render_default_to(hm, heatmap);
-    unsigned char bg_clr[4] = {0, 0, 50, 255};
+    unsigned char bg_clr[4] = {0, 0,0, 255};
     add_bg(heatmap, w, h, bg_clr);
     heatmap_free(hm);
 
-    size_t new_width = 256;
-    size_t new_height = 256;
+    // size_t new_width = 256;
+    // size_t new_height = 256;
 
     // unsigned char *resized_image = resize_image(heatmap, w, h, new_width, new_height);
     // if (!resized_image) {
@@ -129,7 +130,7 @@ int main(int argc, char *argv[]) {
     //     return 1;
     // }
 
-    save_png("heatmap_resized.png", heatmap, w,h);
+    save_png(output_file, heatmap, w,h);
 
     // free_memory(filterbank, num_filters, heatmap);//, resized_image);
     free(result.phasers);

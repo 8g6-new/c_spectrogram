@@ -201,6 +201,11 @@ STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const
     float max_phase        = 0.0;
     float min_phase        = 5.0;
 
+    float g_min_mag        = 5.0;
+    float g_max_mag        = 0.0;
+    float g_min_phase      = 5.0;
+    float g_max_phase      = 5.0;
+
     size_t max_mag_index   = 0;
     size_t min_mag_index   = 0;
     size_t max_phase_index = 0;
@@ -300,8 +305,10 @@ STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const
             result.phasers[index]     = out[j][0];
             result.phasers[index + 1] = out[j][1];
 
-            float mag = sqrt(out[j][0] * out[j][0] + out[j][1] * out[j][1]);
+            float mag   = sqrt(out[j][0] * out[j][0] + out[j][1] * out[j][1]);
             float phase = atan2(out[j][1], out[j][0]);
+
+            phase       = mag * cos(phase);
 
             if (mag > max_mag) {
                 max_mag = mag;
@@ -324,7 +331,18 @@ STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const
             result.phases[i * (size_t)result.num_frequencies + j]     = phase;
         }
 
-       
+        if (min_mag < g_min_mag) {
+            g_min_mag = min_mag;
+        }
+        if (max_mag > g_max_mag) {
+            g_max_mag = max_mag;
+        }
+        if (min_phase < g_min_phase) {
+            g_min_phase = min_phase;
+        }
+        if (max_phase > g_max_phase) {
+            g_max_phase = max_phase;
+        }
 
         result.infos[i * 4]            = min_mag;
         result.infos[i * 4 + 1]        = max_mag;
@@ -338,6 +356,12 @@ STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const
 
         result.fft_times[i]            = ((float)(end - start)) * pow(10, EXP) / CLOCKS_PER_SEC;
     }
+
+    result.mag[0]   = g_min_mag;
+    result.mag[1]   = g_max_mag;
+
+    result.phase[0] = g_min_phase;
+    result.phase[1] = g_max_phase;
 
     fftwf_destroy_plan(p);
     fftwf_free(in);

@@ -22,7 +22,7 @@ $(TARGET): $(OBJECTS)
 
 # Run the STFT test executable
 run:
-	./$(TARGET) ./tests/files/25.wav_2.wav 512 128 hann 256
+	./$(TARGET) ./tests/files/wind.wav 1024 64 hann 256 wind.png
 #               file                  window hop type mel_banks
 
 clean:
