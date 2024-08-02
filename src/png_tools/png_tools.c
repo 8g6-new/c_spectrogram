@@ -1,5 +1,17 @@
 #include "png_tools.h"
 
+void add_bg(unsigned char *image,  size_t width,  size_t height, unsigned char color[4]) {
+    size_t num_pixels = width * height;
+    for (size_t i = 0; i < num_pixels; i++) {
+        unsigned char *pixel = &image[i * 4];
+        if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 0) {
+            pixel[0] = color[0]; // Red
+            pixel[1] = color[1]; // Green
+            pixel[2] = color[2]; // Blue
+        }
+        pixel[3] = color[3];
+    }
+}
 
 void save_png(const char *filename, const unsigned char *image, size_t width, size_t height) {
     FILE *fp = fopen(filename, "wb");

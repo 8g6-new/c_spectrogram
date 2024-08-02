@@ -3,11 +3,11 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O3 -march=native -funroll-loops
 
 # STFT test executable
-TARGET  = Makefiles/bins/test_stft
+TARGET  = Makefiles/bins/stft_test
 SOURCES = tests/test_stft.c src/stft/audio_tools.c
 HEADERS = src/stft/audio_tools.h
 OBJECTS = $(SOURCES:.c=.o)
-LDFLAGS = -lm -lfftw3 -lsndfile
+LDFLAGS = -lm -lfftw3 -lfftw3f -lsndfile
 
 # Default rule
 all: $(TARGET)

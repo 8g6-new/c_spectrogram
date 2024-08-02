@@ -8,48 +8,44 @@ float random_float(float mean, float stddev) {
     return mean + stddev * z;
 }
 
+
+
+
 int main() {
-    static const size_t w = 512, h = 512, npoints = 1000;
+    unsigned char bg_clr[4]  =  {0, 0, 50, 255};
 
-    // Create the heatmap object with the given dimensions (in pixels).
-    heatmap_t* hm = heatmap_new(w, h);
+    static const size_t w = 512, h = 512;
 
-    // Seed the random number generator
+    heatmap_t *hm = heatmap_new(w, h);
+
     srand((unsigned int)time(NULL));
 
-    // Add a bunch of random points to the heatmap.
-    for (unsigned i = 0; i < npoints; ++i) {
-        float x = random_float(0.5f * w, 0.5f / 3.0f * w);
-        float y = random_float(0.5f * h, 0.25f * h);
-        heatmap_add_point(hm, x, y);
+    for (unsigned i = 511; i>0; i--) {
+        heatmap_add_weighted_point(hm, 0, i, i);
     }
 
-    // Allocate memory for the image
-    unsigned char *image = (unsigned char *)malloc(w * h * 4);
-    if (!image) {
+    unsigned char *heatmap = (unsigned char *)malloc(w * h * 4);
+
+    memset(heatmap, 0, w * h * 4);
+
+    if (!heatmap) {
         perror("malloc");
         exit(1);
     }
+    
 
-    // Initialize the image with black color
-    memset(image, 255, w * h * 4);
-
-    // Render the heatmap on top of the black background
-    heatmap_render_default_to(hm, image);
-
-    // Now that we've got a finished heatmap picture, we don't need the map anymore.
+    heatmap_render_default_to(hm, heatmap);
+    add_bg(heatmap,w,h,bg_clr);
     heatmap_free(hm);
 
-    // Resize the image to 128x128
-    size_t new_width = 128;
-    size_t new_height = 128;
-    unsigned char *resized_image = resize_image(image, w, h, new_width, new_height);
+    
 
-    // Save the resized image as PNG
+    unsigned char *resized_image = resize_image(heatmap, w, h, new_width, new_height);
+
     save_png("heatmap_resized.png", resized_image, new_width, new_height);
 
     // Free the memory
-    free(image);
+    free(heatmap);
     free(resized_image);
 
     return 0;

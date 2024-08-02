@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O3 -march=native -funroll-loops
 
 # PNG test executable
-TARGET  =  Makefiles/bins/test_heatmap
+TARGET  =  Makefiles/bins/heatmap_test
 SOURCES =  tests/test_heatmap.c src/png_tools/png_tools.c src/libheatmap/heatmap.c
 HEADERS = /src/png_tools/png_tools.h src/libheatmap/heatmap.h
 OBJECTS = $(SOURCES:.c=.o)

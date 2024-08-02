@@ -5,6 +5,8 @@
         "stdlib.h": "c",
         "heatmap.h": "c",
         "png_tools.h": "c",
-        "chrono": "c"
+        "chrono": "c",
+        "format": "c",
+        "variant": "c"
     }
 }
