@@ -3,11 +3,11 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O3 -march=native -funroll-loops
 
 # STFT test executable
-TARGET  = Makefiles/bins/stft_test
-SOURCES = tests/test_stft.c src/stft/audio_tools.c
-HEADERS = src/stft/audio_tools.h
+TARGET  = main
+SOURCES = main.c src/stft/audio_tools.c src/png_tools/png_tools.c src/libheatmap/heatmap.c
+HEADERS = src/stft/audio_tools.h /src/png_tools/png_tools.h src/libheatmap/heatmap.h
 OBJECTS = $(SOURCES:.c=.o)
-LDFLAGS = -lm -lfftw3 -lfftw3f -lsndfile
+LDFLAGS = -lm -lfftw3 -lfftw3f -lsndfile -lpng 
 
 # Default rule
 all: $(TARGET)
@@ -22,9 +22,9 @@ $(TARGET): $(OBJECTS)
 
 # Run the STFT test executable
 run:
-	./$(TARGET)
+	./$(TARGET) ./tests/files/25.wav_2.wav 512 128 hann 256
+#               file                  window hop type mel_banks
 
-# Clean up build artifacts
 clean:
 	rm -f $(TARGET) $(OBJECTS)
 
