@@ -72,33 +72,30 @@ void save_png(const char *filename, const unsigned char *image, size_t width, si
 }
 
 unsigned char* resize_image(const unsigned char *original, size_t orig_width, size_t orig_height, size_t new_width, size_t new_height) {
-    // Allocate memory for the resized image
+
     unsigned char *resized = (unsigned char *)malloc(new_width * new_height * 4);
     if (!resized) {
         perror("malloc");
         exit(1);
     }
 
-    // Compute scaling factors
     float x_scale = (float)orig_width / new_width;
     float y_scale = (float)orig_height / new_height;
 
-    // Pointers to optimize access
     const unsigned char *orig_row_ptr;
     unsigned char *resized_row_ptr = resized;
 
-    // Size of a row in bytes for the original and resized images
     size_t orig_row_size = orig_width * 4;
     size_t resized_row_size = new_width * 4;
 
-    // Resize the image
+
     for (size_t y = 0; y < new_height; ++y) {
         orig_row_ptr = original + (size_t)(y * y_scale) * orig_row_size;
         unsigned char *resized_pixel_ptr = resized_row_ptr;
 
         for (size_t x = 0; x < new_width; ++x) {
             size_t orig_x = (size_t)(x * x_scale) * 4;
-            memcpy(resized_pixel_ptr, orig_row_ptr + orig_x, 4); // Copy pixel data
+            memcpy(resized_pixel_ptr, orig_row_ptr + orig_x, 4); 
             resized_pixel_ptr += 4;
         }
         resized_row_ptr += resized_row_size;
