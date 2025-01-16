@@ -287,8 +287,9 @@ inline void spectrogram(stft_d *result,const char *output_file,unsigned char bg_
     for (size_t t = 0; t < w; t++) {
         for (size_t f = 0; f < h; f++) {
             size_t inverted_axis = (h-f-1); 
-            float mag   = result->magnitudes[t*h*inverted_axis];
-            heatmap_add_weighted_point(hm,t,f,(float)db*log10(mag*mag+1) + (float)!db * mag); //brachless
+            float mag   = result->magnitudes[t*h+inverted_axis];
+            mag = (float)!db*log10(mag*mag+1) + (float)db * mag; //brachless
+            heatmap_add_weighted_point(hm,t,f,mag); 
         }
     }
    
@@ -318,7 +319,7 @@ inline void mel_spectrogram(stft_d *result,const char *output_file,unsigned char
 
                 sum+=mel_filter_bank[(num_filters - mel - 1) * h+inverted_axis] * mag * mag;
             }
-            sum = (float)db*sum + (float)!db * log10(sum+1);
+            sum = (float)!db*sum + (float)db * log10(sum+1);
             
             mel_vales[t*num_filters+(num_filters - mel - 1)] = sum;
 
