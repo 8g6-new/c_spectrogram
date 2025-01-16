@@ -42,7 +42,7 @@ debug: clean $(TARGET)
 	@./$(TARGET)
 
 run:
-	./$(TARGET) ./tests/files/black_woodpecker.wav c_mel_black_woodpecker.png 2048 128 hann 512 128
+	./$(TARGET) ./tests/files/black_woodpecker.wav black_woodpecker.png 2048 128 hann 512 128
 
 clean:
 	rm -f $(TARGET) $(OBJECTS)
