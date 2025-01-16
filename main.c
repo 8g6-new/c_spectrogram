@@ -24,6 +24,13 @@ int main(int argc, char *argv[]) {
     const char *window_type        = argv[5];
     unsigned int num_filters       = (unsigned short int)atoi(argv[6]);
     unsigned int num_coff          = (unsigned short int)atoi(argv[7]);
+
+
+    char stft_filename[100], mel_filename[100], mfcc_filename[100]; 
+
+    sprintf(stft_filename, "%s_stft.png", op_filename); 
+    sprintf(mel_filename, "%s_mel.png", op_filename);    
+    sprintf(mfcc_filename, "%s_mfcc.png", op_filename); 
     
     unsigned char bg_clr[]         = {0,0,0,255};
 
@@ -54,13 +61,13 @@ int main(int argc, char *argv[]) {
     {
         #pragma omp section
         {
-            spectrogram(&result, "stft.png", bg_clr, true);
+            spectrogram(&result, stft_filename, bg_clr, true);
         }
         
         #pragma omp section
         {
-            mel_spectrogram(&result, "mel.png", bg_clr, true, num_filters, mel_filter_bank, mel_values);
-            MFCC(mel_values, "mfcc.png", w, bg_clr, true, num_filters, num_coff);
+            mel_spectrogram(&result,mel_filename, bg_clr, true, num_filters, mel_filter_bank, mel_values);
+            MFCC(mel_values,mfcc_filename, w, bg_clr, true, num_filters, num_coff);
         }
     }
  
