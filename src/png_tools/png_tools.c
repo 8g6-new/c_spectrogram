@@ -1,4 +1,5 @@
 #include "png_tools.h"
+#include "../libheatmap/heatmap.h"
 
 void add_bg(unsigned char *image,  size_t width,  size_t height, unsigned char color[4]) {
     size_t num_pixels = width * height;

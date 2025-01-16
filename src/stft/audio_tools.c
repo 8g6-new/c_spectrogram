@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <time.h>
 
 
 clock_t start, end;
@@ -12,128 +11,154 @@ float cpu_time_used;
 float mag = 0.0, phase = 0.0;
 
 #include "audio_tools.h"
+#include "../libheatmap/heatmap.h"
+#include "../png_tools/png_tools.h"
 
-int compare_by_magnitude(const void *a, const void *b) {
-    const FrequencyMagnitudePair *pair1 = (const FrequencyMagnitudePair *)a;
-    const FrequencyMagnitudePair *pair2 = (const FrequencyMagnitudePair *)b;
-    return (pair2->magnitude > pair1->magnitude) - (pair2->magnitude < pair1->magnitude);
+unsigned char* heatmap_get_vars(size_t w, size_t h, heatmap_t **hm_out) {
+    unsigned char *heatmap = malloc(sizeof(unsigned char) * w * h * 4);
+    if (!heatmap) {
+        perror("malloc heatmap");
+        return NULL;
+    }
+    
+    memset(heatmap, 0, w * h * 4);
+
+    heatmap_t *hm = heatmap_new(w,h);
+    
+    if (!hm) {
+        fprintf(stderr, "Failed to create heatmap.\n");
+        free(heatmap);
+        return NULL;
+    }
+
+    *hm_out = hm;
+
+    return heatmap;
 }
 
-STFTStats stft_weighted_avg(float *output, size_t num_frequencies, float *frequencies, unsigned short int num_samples, unsigned short int peak, unsigned short int min, unsigned short int max) {
-    
-    STFTStats stats;
 
-    start = clock();
+inline void free_stft(stft_d *result) {
+    free(result->phasers);
+    result->phasers = NULL;
 
-    if (num_frequencies <= 0) {
-        fprintf(stderr, "Invalid number of frequencies %zu\n", num_frequencies);
-    }
+    free(result->magnitudes);
+    result->magnitudes = NULL;
 
-    if (num_samples <= 0) {
-        fprintf(stderr, "Invalid number of samples %hu\n", num_samples);
-    }
-
-    FrequencyMagnitudePair *frequency_magnitude_pairs = (FrequencyMagnitudePair *)malloc(num_frequencies * sizeof(FrequencyMagnitudePair));
-
-    if (!frequency_magnitude_pairs) {
-        fprintf(stderr, "Memory allocation failed.\n");
-        // handle memory allocation failure
-        return stats;
-    }
-
-    for (size_t j = 0; j < num_frequencies; j++) {
-        mag  = sqrt(output[j * 2] * output[j * 2] + output[j * 2 + 1] * output[j * 2 + 1]);
-        
-        if (mag > max) max = mag;
-
-        frequency_magnitude_pairs[j].frequency = frequencies[j];
-        frequency_magnitude_pairs[j].magnitude = mag;
-    }
-
-    qsort(frequency_magnitude_pairs, num_frequencies, sizeof(FrequencyMagnitudePair), compare_by_magnitude);
-
-    stats.weighted_mean  = 0.0;
-    stats.std_freq_dev   = 0.0;
-    stats.sdfbpf         = 0.0;
-    stats.sdfbmif        = 0.0;
-    stats.sdfbmxf        = 0.0;
-
-    stats.top_freq = frequency_magnitude_pairs[0].frequency;
-
-    if (num_samples > 0) {
-        for (unsigned short int j = 0; j < num_samples; j++) {
-            stats.mean_freq     += frequency_magnitude_pairs[j].frequency;
-            stats.weighted_mean += frequency_magnitude_pairs[j].frequency * (frequency_magnitude_pairs[j].magnitude / max);
-        }
-
-        stats.mean_freq        = stats.mean_freq / num_samples;
-
-        for (unsigned short int j = 0; j < num_samples; j++) {
-            stats.std_freq_dev  += pow(frequency_magnitude_pairs[j].frequency - stats.mean_freq, 2);
-            stats.sdfbpf        += pow(frequency_magnitude_pairs[j].frequency - peak, 2);
-            stats.sdfbmif       += pow(frequency_magnitude_pairs[j].frequency - max, 2);
-            stats.sdfbmxf       += pow(frequency_magnitude_pairs[j].frequency - min, 2);
-        }
-
-        stats.std_freq_dev     = sqrt(stats.std_freq_dev / num_samples);
-        stats.sdfbpf           = sqrt(stats.sdfbpf / num_samples);
-        stats.sdfbmif          = sqrt(stats.sdfbmif / num_samples);
-        stats.sdfbmxf          = sqrt(stats.sdfbmxf / num_samples);
-
-    } else {
-        fprintf(stderr, "Number of samples is zero.\n %hu", num_samples);
-    }
-
-    end = clock();
-    stats.time = ((float)(end - start)) * pow(10, EXP) / CLOCKS_PER_SEC;
-
-    free(frequency_magnitude_pairs);
-
-    return stats;
+    free(result->phases);
+    result->phases = NULL;
 }
 
-void mel_filterbank(size_t num_filters, size_t fft_size, float sample_rate, float **filterbank) {
-    float f_min = 0;
-    float f_max = sample_rate / 2;
-    float center = 2595.0;
-    float log_center = log10(1 + f_min / 700.0);
-    float mel_min = center * log_center;
-    float mel_max = center * log10(1 + f_max / 700.0);
-    
-    float *mel_points = (float *)malloc((num_filters + 2) * sizeof(float));
-    float mel_step = (mel_max - mel_min) / (num_filters + 1);
-    for (size_t i = 0; i < num_filters + 2; ++i) {
-        mel_points[i] = mel_min + i * mel_step;
-    }
-    
-    float *freq_points = (float *)malloc((num_filters + 2) * sizeof(float));
-    int *bin_points = (int *)malloc((num_filters + 2) * sizeof(int));
-    for (size_t i = 0; i < num_filters + 2; ++i) {
-        freq_points[i] = 700 * (pow(10, mel_points[i] / center) - 1);
-        bin_points[i] = round(freq_points[i] / (sample_rate / fft_size));
-    }
-    
-    for (size_t m = 0; m < num_filters; ++m) {
-        size_t start_bin = bin_points[m];
-        size_t mid_bin = bin_points[m + 1];
-        size_t end_bin = bin_points[m + 2];
-        
-        for (size_t k = start_bin; k < mid_bin; ++k) {
-            filterbank[m][k] = (float)(k - start_bin) / (mid_bin - start_bin);
-        }
-        
-        for (size_t k = mid_bin; k < end_bin; ++k) {
-            filterbank[m][k] = (float)(end_bin - k) / (end_bin - mid_bin);
-        }
-    }
-    
-    // Free allocated memory
-    free(mel_points);
-    free(freq_points);
-    free(bin_points);
+inline static double hz_to_mel(double f, float mid_f) {
+    return mid_f * log10(1 + f / 700.0);
 }
 
-void apply_window_function(float *window_values, size_t window_size, const char *window_type) {
+inline static double mel_to_hz(double m, float mid_f) {
+    return 700.0 * (pow(10, m / mid_f) - 1);
+}
+
+inline static void init_fft_output(stft_d *result,unsigned int window_size,unsigned int hop_size,unsigned int num_samples) {
+    result->phasers         = NULL;
+    result->magnitudes      = NULL;
+    result->phases          = NULL;
+    
+    result->fft_times       = 0.0;
+    result->num_frequencies = (size_t) window_size / 2;
+    result->output_size     = (size_t) (num_samples/ hop_size);
+
+    result->magnitudes      = (float*) malloc(result->num_frequencies * result->output_size * sizeof(float));
+    result->phases          = (float*) malloc(result->num_frequencies * result->output_size * sizeof(float));
+    result->phasers         = (float*) malloc(result->num_frequencies * 2 * result->output_size * sizeof(float));
+
+    if (!result->phasers  || !result->magnitudes || !result->phases) {
+        fprintf(stderr, "Memory allocation failed\n");
+        free(result->phasers);
+        free(result->magnitudes);
+        free(result->phases);
+    }
+}
+
+
+inline audio_data read_file(const char *filename){
+
+    audio_data audio = {0};
+    
+    SNDFILE *file;
+    SF_INFO sf_info;
+
+    file = sf_open(filename, SFM_READ, &sf_info);
+    if (!file) {
+        fprintf(stderr, "Error opening file\n");
+        return audio ;
+    }
+
+    audio.num_samples = (size_t)sf_info.frames * sf_info.channels;
+    audio.samples     = (float*)malloc(audio.num_samples * sizeof(float));
+
+    if (!audio.samples) {
+        fprintf(stderr, "Memory allocation failed\n");
+        free(audio.samples);
+        audio.samples = NULL;
+        sf_close(file);
+        return audio ;
+    }
+
+    if (sf_readf_float(file,audio.samples, sf_info.frames) < sf_info.frames) {
+        fprintf(stderr, "Error reading audio data\n");
+        free(audio.samples);
+        audio.samples = NULL;
+        sf_close(file);
+        return audio ;
+    }
+
+    audio.sample_rate = sf_info.samplerate;
+    audio.channels    = sf_info.channels;
+    audio.frames      = sf_info.frames;
+
+    sf_close(file);
+
+    return audio;
+}
+
+
+
+
+inline size_t safe_diff(size_t a, size_t b) {
+    return a==b ? 1 : a-b;
+}
+
+void mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_t fft_size, float *filter) {
+    int fft_d = (int)fft_size / 2;
+
+    float mid = 2595.0;
+
+    float mel_min = hz_to_mel(min_f, mid);
+    float mel_max = hz_to_mel(max_f, mid);
+
+    float mel_step = (mel_max - mel_min) / (n_filters + 1);
+
+    size_t freq_bins[n_filters + 2];
+    for (size_t i = 0; i < n_filters + 2; i++) {
+        float hz = mel_to_hz(mel_min + (mel_step * i), mid);
+        freq_bins[i] = (size_t)round(hz * fft_size / sr);
+    }
+
+    for (size_t m = 0; m < n_filters; m++) {
+        size_t start_bin = freq_bins[m];
+        size_t mid_bin = freq_bins[m + 1];
+        size_t end_bin = freq_bins[m + 2];
+
+        for (size_t f = start_bin; f <= mid_bin; f++) {
+            filter[m * fft_d + f] = (float)(f - start_bin) / safe_diff(mid_bin,start_bin);
+        }
+
+        for (size_t f = mid_bin + 1; f <= end_bin; f++) {
+            filter[m * fft_d + f] = (float)(end_bin - f) / safe_diff(end_bin,mid_bin);
+        }
+    }
+}
+
+
+void window_function(float *window_values, size_t window_size, const char *window_type) {
     if (strcmp(window_type, "hann") == 0) {
         for (size_t i = 0; i < window_size; i++) {
             window_values[i] = 0.5 * (1 - cos(2 * M_PI * i / (window_size - 1)));
@@ -192,95 +217,17 @@ void calculate_frequencies(float *frequencies, size_t window_size, float sample_
 }
 
 //fftwf : 32bit vs fftw 64bit vs fftwq:  128bit
-STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const char *window_type) {
+
+inline stft_d stft(float *samples,size_t window_size, size_t hop_size,uint64_t num_samples,float *window_values) {
     
-    STFTResult result      = {0};
+    stft_d result = {0};
 
-    float max_mag          = 0.0;
-    float min_mag          = 5.0;
-    float max_phase        = 0.0;
-    float min_phase        = 5.0;
+    init_fft_output(&result,window_size,hop_size,num_samples);
 
-    float g_min_mag        = 5.0;
-    float g_max_mag        = 0.0;
-    float g_min_phase      = 5.0;
-    float g_max_phase      = 5.0;
-
-    size_t max_mag_index   = 0;
-    size_t min_mag_index   = 0;
-    size_t max_phase_index = 0;
-    size_t min_phase_index = 0;
-
-    result.phasers         = NULL;
-    result.frequencies     = NULL;
-    result.magnitudes      = NULL;
-    result.phases          = NULL;
-    result.fft_times       = NULL;
-    result.infos           = NULL;
-    result.info_indexes    = NULL;
-    result.output_size     = 0;
-    result.num_frequencies = window_size / 2;
-
-    SNDFILE *file;
-    SF_INFO sf_info;
-    float *audio_data;
-    size_t num_samples;
-
-    file = sf_open(filename, SFM_READ, &sf_info);
-    if (!file) {
-        fprintf(stderr, "Error opening file\n");
-        return result;
-    }
-
-    num_samples = (size_t)sf_info.frames * sf_info.channels;
-    audio_data = (float*)malloc(num_samples * sizeof(float));
-
-    if (!audio_data) {
-        fprintf(stderr, "Memory allocation failed\n");
-        sf_close(file);
-        return result;
-    }
-
-    if (sf_readf_float(file, audio_data, sf_info.frames) < sf_info.frames) {
-        fprintf(stderr, "Error reading audio data\n");
-        free(audio_data);
-        sf_close(file);
-        return result;
-    }
-
-    sf_close(file);
-
-    fftwf_complex *in = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * window_size);
+    fftwf_complex *in  = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * window_size);
     fftwf_complex *out = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * window_size);
-    fftwf_plan p = fftwf_plan_dft_1d((int)window_size, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftwf_plan p       = fftwf_plan_dft_1d((int)window_size, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 
-    float *window_values = (float*)malloc(window_size * sizeof(float));
-    apply_window_function(window_values, window_size, window_type);
-
-    result.frequencies = (float*)malloc(result.num_frequencies * sizeof(float));
-    calculate_frequencies(result.frequencies, window_size, sf_info.samplerate);
-
-    result.output_size     = (num_samples - window_size) / hop_size + 1;
-
-    // Allocating pointers to avoid seg faults
-    
-    result.phasers         = (float*)malloc(result.num_frequencies * 2 * result.output_size * sizeof(float));
-    result.magnitudes      = (float*)malloc(result.num_frequencies * result.output_size * sizeof(float));
-    result.phases          = (float*)malloc(result.num_frequencies * result.output_size * sizeof(float));
-    result.fft_times       = (float*)malloc(result.output_size * sizeof(float));
-    result.infos           = (float*)malloc(result.output_size * 4 * sizeof(float)); 
-    result.info_indexes    = (unsigned short int*)malloc(result.output_size * 4 * sizeof(unsigned short int));
-
-
-    if (!result.phasers || !result.frequencies || !result.magnitudes || !result.phases || !result.fft_times || !result.infos) {
-        fprintf(stderr, "Memory allocation failed\n");
-        fftwf_destroy_plan(p);
-        fftwf_free(in);
-        fftwf_free(out);
-        free(audio_data);
-        free(window_values);
-        return result;
-    }
 
     for (size_t i = 0; i < result.output_size; i++) {
         clock_t start = clock();
@@ -289,7 +236,7 @@ STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const
         if (start_idx + window_size > num_samples) break;
 
         for (size_t j = 0; j < window_size; j++) {
-            in[j][0] = audio_data[start_idx + j] * window_values[j];
+            in[j][0] = samples[start_idx + j] * window_values[j];
             in[j][1] = 0.0;
         }
 
@@ -300,7 +247,7 @@ STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const
   
         for (size_t j = 0; j < result.num_frequencies; j++) {
 
-            size_t index = i * (size_t)result.num_frequencies * 2 + j * 2;
+            size_t index = i * (result.num_frequencies * 2) + (j * 2); // number of samples = 2 * f_max and j* 2 ( real , imag)
 
             result.phasers[index]     = out[j][0];
             result.phasers[index + 1] = out[j][1];
@@ -308,66 +255,105 @@ STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const
             float mag   = sqrt(out[j][0] * out[j][0] + out[j][1] * out[j][1]);
             float phase = atan2(out[j][1], out[j][0]);
 
-            phase       = mag * cos(phase);
-
-            if (mag > max_mag) {
-                max_mag = mag;
-                max_mag_index = j;
-            }
-            if (mag < min_mag) {
-                min_mag = mag;
-                min_mag_index = j;
-            }
-            if (phase > max_phase) {
-                max_phase = phase;
-                max_phase_index = j;
-            }
-            if (phase < min_phase) {
-                min_phase = phase;
-                min_phase_index = j;
-            }
-
-            result.magnitudes[i * (size_t)result.num_frequencies + j] = mag;
-            result.phases[i * (size_t)result.num_frequencies + j]     = phase;
+            result.magnitudes[i * result.num_frequencies + j] = mag;
+            result.phases[i * result.num_frequencies + j]     = phase;
         }
 
-        if (min_mag < g_min_mag) {
-            g_min_mag = min_mag;
-        }
-        if (max_mag > g_max_mag) {
-            g_max_mag = max_mag;
-        }
-        if (min_phase < g_min_phase) {
-            g_min_phase = min_phase;
-        }
-        if (max_phase > g_max_phase) {
-            g_max_phase = max_phase;
-        }
-
-        result.infos[i * 4]            = min_mag;
-        result.infos[i * 4 + 1]        = max_mag;
-        result.infos[i * 4 + 2]        = min_phase;
-        result.infos[i * 4 + 3]        = max_phase;
-
-        result.info_indexes[i * 4]     = min_mag_index;
-        result.info_indexes[i * 4 + 1] = max_mag_index;
-        result.info_indexes[i * 4 + 2] = min_phase_index;
-        result.info_indexes[i * 4 + 3] = max_phase_index;
-
-        result.fft_times[i]            = ((float)(end - start)) * pow(10, EXP) / CLOCKS_PER_SEC;
+        result.fft_times            += ((float)(end - start)) * pow(10, EXP) / CLOCKS_PER_SEC;
     }
 
-    result.mag[0]   = g_min_mag;
-    result.mag[1]   = g_max_mag;
-
-    result.phase[0] = g_min_phase;
-    result.phase[1] = g_max_phase;
-
     fftwf_destroy_plan(p);
+    p = NULL;
     fftwf_free(in);
+    in = NULL;
+
     fftwf_free(out);
-    free(audio_data);
+    out=NULL;
+
     free(window_values);
+    window_values = NULL;
 
     return result;
+}
+
+
+inline void spectrogram(stft_d *result,const char *output_file,unsigned char bg_clr[4],bool db){
+    size_t w = result->output_size;
+    size_t h = result->num_frequencies;
+
+    heatmap_t *hm = NULL;
+    unsigned char *heatmap = heatmap_get_vars(w,h, &hm);
+
+    for (size_t t = 0; t < w; t++) {
+        for (size_t f = 0; f < h; f++) {
+            size_t inverted_axis = (h-f-1); 
+            float mag   = result->magnitudes[t*h*inverted_axis];
+            heatmap_add_weighted_point(hm,t,f,(float)db*log10(mag*mag+1) + (float)!db * mag); //brachless
+        }
+    }
+   
+    heatmap_render_default_to(hm, heatmap);
+
+    add_bg(heatmap, w,h, bg_clr);
+    heatmap_free(hm);
+
+    save_png(output_file,heatmap, w,h);
+}
+
+inline void mel_spectrogram(stft_d *result,const char *output_file,unsigned char bg_clr[4],bool db,size_t num_filters,float *mel_filter_bank,float *mel_vales){
+    
+    size_t w = result->output_size;
+    size_t h = result->num_frequencies;
+
+    heatmap_t *hm = NULL;
+    unsigned char *heatmap = heatmap_get_vars(w,num_filters,&hm);
+
+    for (size_t t = 0; t < w; t++) {
+        for (size_t mel = 0; mel < num_filters; mel++){
+            float sum = 0;  
+            for (size_t f = 0; f < h; f++) {
+                size_t inverted_axis = (h-f-1); 
+
+                float mag   = result->magnitudes[t*h+inverted_axis];
+
+                sum+=mel_filter_bank[(num_filters - mel - 1) * h+inverted_axis] * mag * mag;
+            }
+            sum = (float)db*sum + (float)!db * log10(sum+1);
+            
+            mel_vales[t*num_filters+(num_filters - mel - 1)] = sum;
+
+            heatmap_add_weighted_point(hm, t, mel,sum); 
+        }
+    }
+
+    heatmap_render_default_to(hm, heatmap);
+
+    add_bg(heatmap, w,num_filters, bg_clr);
+    heatmap_free(hm);
+
+    save_png(output_file,heatmap, w,num_filters);
+}
+
+
+inline void MFCC(float *mel_values,const char *output_file,size_t w,unsigned char bg_clr[4],bool db,size_t num_filters,size_t num_coff){
+    
+    heatmap_t *hm = NULL;
+    unsigned char *heatmap = heatmap_get_vars(w,num_coff,&hm);
+
+    for (size_t t = 0; t < w; t++) {
+        for(size_t n=0;n<num_coff;n++){
+            float sum = 0;
+            for (size_t mel = 0; mel < num_filters; mel++){   
+                sum+=(cos((M_PI/num_filters)*(mel+1/2)*n))  * mel_values[t*num_filters + (num_filters - mel - 1)];
+            }
+            heatmap_add_weighted_point(hm, t,n,pow(sum*sum,2));
+        }
+    }
+
+    heatmap_render_default_to(hm, heatmap);
+
+    add_bg(heatmap, w,num_coff, bg_clr);
+    heatmap_free(hm);
+
+    save_png(output_file,heatmap, w,num_coff);
 }
