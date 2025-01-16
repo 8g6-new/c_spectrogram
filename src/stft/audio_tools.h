@@ -1,45 +1,49 @@
-#ifndef STFT_H
-#define STFT_H
+#ifndef AUDIO_TOOLS_H
+#define AUDIO_TOOLS_H
+    #include <sndfile.h>
+    #include <fftw3.h>
+    #include <stddef.h>
+    #include <stdbool.h>
 
-#include <sndfile.h>
-#include <fftw3.h>
-#include <stddef.h>
+
+    #define EXP 6 // Microseconds
+    #define MAX_FILTERS 128 // Max filters for mel spectrogram
 
     typedef struct {
-        float frequency;
-        float magnitude;
-    } FrequencyMagnitudePair;
+        size_t num_samples;
+        size_t channels;
+        size_t frames;
+        float *samples;
+        float sample_rate;
+    } audio_data;
 
     typedef struct {
-        float *phasers;
         size_t output_size;
-        float *frequencies;
-        unsigned int num_frequencies;
+        size_t num_frequencies;
         float *magnitudes;
         float *phases;
-        float *infos;
-        float phase[2];
-        float mag[2];
-        unsigned short int *info_indexes;
-        float *fft_times;
-    } STFTResult;
+        float fft_times;
+        float *phasers;
+    } stft_d;
+    
 
-    typedef struct {
-        float top_freq;
-        float mean_freq;
-        float weighted_mean;
-        float std_freq_dev;
-        float time;
-        float sdfbpf;
-        float sdfbmif;
-        float sdfbmxf;
-    } STFTStats;
+    audio_data read_file(const char *filename);
+
+    static void init_fft_output(stft_d *result, unsigned int window_size, unsigned int hop_size, unsigned int num_samples);
+    stft_d stft(float *samples, size_t window_size, size_t hop_size, uint64_t num_samples, float *window_values);
+    void free_stft(stft_d *result);
 
 
-    STFTStats stft_weighted_avg(float*output, size_t num_frequencies, float*frequencies, unsigned short int num_samples, unsigned short int peak, unsigned short int min, unsigned short int max);
-    int compare_by_magnitude(const void *a, const void *b);
-    void apply_window_function(float *window_values, size_t window_size, const char *window_type);
+    void spectrogram(stft_d *result, const char *output_file, unsigned char bg_clr[4], bool db);
+    void mel_spectrogram(stft_d *result,const char *output_file,unsigned char bg_clr[4],bool db,size_t num_filters,float *mel_filter_bank,float *mel_vales);
+    void MFCC(float *mel_values,const char *output_file,size_t w,unsigned char bg_clr[4],bool db,size_t num_filters,size_t num_coff);
+
+    void window_function(float *window_values, size_t window_size, const char *window_type);
+    void mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_t fft_size, float *filter);
+
+    static double hz_to_mel(double f, float mid_f);
+    static double mel_to_hz(double m, float mid_f);
     void calculate_frequencies(float *frequencies, size_t window_size, float sample_rate);
-    STFTResult stft(const char *filename, size_t window_size, size_t hop_size, const char *window_type);
-    void mel_filterbank(size_t num_filters, size_t fft_size, float sample_rate, float **filterbank);
+    size_t safe_diff(size_t a, size_t b);
+
 #endif
