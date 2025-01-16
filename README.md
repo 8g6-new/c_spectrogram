@@ -1,2 +1,2 @@
 # c_spectrogram
-<iframe src="https://wakatime.com/@018c3e96-0fae-432d-add6-28d53961f8b4/projects/aenbgindwl?start=2025-01-11&end=2025-01-17" width="100%" height="600px" frameborder="0"></iframe>
+<a href="https://wakatime.com/badge/user/018c3e96-0fae-432d-add6-28d53961f8b4/project/54fb69e3-a9fa-4548-b5ef-6494425e2ffb"><img src="https://wakatime.com/badge/user/018c3e96-0fae-432d-add6-28d53961f8b4/project/54fb69e3-a9fa-4548-b5ef-6494425e2ffb.svg" alt="wakatime"></a>
