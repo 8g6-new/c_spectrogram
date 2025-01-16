@@ -6,7 +6,7 @@ import os
 def normalize_data(data):
     return (data - np.min(data)) / (np.max(data) - np.min(data))
 
-def compute_mel(file_path, op_path,sr=44100, n_fft=4096, hop_length=64, n_mels=512, fmin=0, fmax=10000):
+def compute_mel(file_path, op_path,sr=44100, n_fft=2048, hop_length=128, n_mels=512, fmin=0, fmax=10000):
     y, sr               = librosa.load(file_path, sr=sr, dtype=np.float32)
     mel_spec            = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
     mel_spec_db         = librosa.amplitude_to_db(mel_spec, ref=np.max)

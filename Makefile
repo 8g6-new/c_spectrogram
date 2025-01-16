@@ -4,6 +4,8 @@ CFLAGS   = -Wall -Wextra -O3 -march=native -mtune=native -ffast-math \
            -ftree-loop-vectorize -fopt-info-vec-optimized -fopenmp \
            -mavx -mavx2 -mfma -msse4.2 -DDEBUG 
 
+# Debug build flags (for debugging)
+CFLAGS_DEBUG = -g -O0 -DDEBUG
 
 # Link-time optimization
 CFLAGS  += -flto=auto -fuse-linker-plugin
@@ -12,11 +14,8 @@ CFLAGS  += -flto=auto -fuse-linker-plugin
 # CFLAGS  += -fprofile-generate  # First pass
 # CFLAGS  += -fprofile-use       # Second pass
 
-
-
 # Linker flags
-LDFLAGS  = -Wl,-O3 -Wl,--as-needed -Wl,--strip-all \
-           -lm -lfftw3 -lfftw3f  -lsndfile -lpng \
+LDFLAGS  =  -lm -lfftw3 -lfftw3f  -lsndfile -lpng \
 		   -mavx -mavx2 -mfma -g
 
 # Target names
@@ -25,23 +24,27 @@ SOURCES  = main.c src/libheatmap/heatmap.c src/png_tools/png_tools.c src/stft/au
 HEADERS  = src/libheatmap/heatmap.h src/png_tools/png_tools.h src/stft/audio_tools.h
 OBJECTS  = $(SOURCES:.c=.o)
 
-# Default rule
+# Default rule for Release Build
 all: $(TARGET)
 
-# Rule to build the target executable
+# Rule to build the target executable in release mode
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
 
-# Rule to build object files
+# Rule to build object files in release mode
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Debug build (using debug flags)
+debug: CFLAGS = $(CFLAGS_DEBUG)
+debug: clean $(TARGET)
+	@echo "Built in Debug Mode"
+	@./$(TARGET)
 
 run:
-	./$(TARGET) ./tests/files/black_woodpecker.wav c_mel_black_woodpecker.png 4096 64 hann 512
-#               input_file              output_file          window hop type mel_banks
+	./$(TARGET) ./tests/files/black_woodpecker.wav c_mel_black_woodpecker.png 2048 128 hann 512 128
 
 clean:
 	rm -f $(TARGET) $(OBJECTS)
 
-.PHONY: all run clean
+.PHONY: all run clean debug
