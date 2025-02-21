@@ -21,7 +21,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "heatmap.h"
+#include "../../headers/libheatmap/heatmap.h"
 
 #include <stdlib.h> /* malloc, calloc, free */
 #include <string.h> /* memcpy, memset */

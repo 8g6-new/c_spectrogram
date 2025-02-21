@@ -1,5 +1,5 @@
-#include "png_tools.h"
-#include "../libheatmap/heatmap.h"
+#include "../../headers/png_tools/png_tools.h"
+
 
 void add_bg(unsigned char *image,  size_t width,  size_t height, unsigned char color[4]) {
     size_t num_pixels = width * height;
@@ -71,6 +71,8 @@ void save_png(const char *filename, const unsigned char *image, size_t width, si
     png_destroy_write_struct(&png, &info);
     fclose(fp);
 }
+
+
 
 unsigned char* resize_image(const unsigned char *original, size_t orig_width, size_t orig_height, size_t new_width, size_t new_height) {
 
