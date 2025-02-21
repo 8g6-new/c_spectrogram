@@ -1,6 +1,8 @@
 ### OpenCV-like Color Schemes
 
-These schemes are inspired by the color palettes available in OpenCV, providing a familiar look and feel for users accustomed to working with that library.
+These color schemes are inspired by the predefined color gradients available in OpenCV documentation. The gradients were carefully extracted from various images provided by OpenCV and converted into RGB format using OpenCV's cvtColor function. Each gradient was processed into RGBA values and organized into a format suitable for integration into different applications.
+
+By following OpenCV's well-established color palettes, these schemes offer a familiar and consistent experience for users accustomed to the library's color representations. The color gradients represent a range of hues and transitions, ideal for visualizing data across different domains while maintaining the color characteristics defined by OpenCV.
 
 | Color Scheme       | Description |
 |--------------------|-------------|
@@ -26,6 +28,8 @@ These schemes are inspired by the color palettes available in OpenCV, providing 
 | **TWILIGHT_SHIFTED**| A variation of the twilight palette with adjusted hues, creating a unique and dreamy atmosphere, perfect for artistic expressions. |
 | **TURBO**           | A bright and energetic color scheme featuring vivid colors, often used to convey speed and excitement in design. |
 | **DEEP_GREEN**      | A rich and dark green color, reminiscent of lush forests and nature, evoking feelings of stability and growth. |
+
+## Examples
 
 | Scheme Name        | Spectrogram                                                                                                                                                                                                                         |
 | :----------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
