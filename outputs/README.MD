@@ -4,60 +4,33 @@ This repository includes a variety of color schemes for visualizing data, partic
 
 ## Color Scheme Descriptions
 
-1. **Blues **: A range of blue shades, typically progressing from light to dark, creating a calming and cool gradient. It often starts with light sky blue and moves towards deeper, more navy-like tones.
-
-2. **Greys **: A monochromatic scale with varying shades of grey, typically ranging from light silver to charcoal. This scheme focuses on neutrality and subtlety without strong color dominance.
-
-3. **PuBuGn **: A blend of purple, blue, and green hues, often transitioning from lavender to aqua or mint. It typically features soft and cool colors, emphasizing a smooth gradient across the three main colors.
-
-4. **RdPu **: A color scheme featuring shades of red and purple, transitioning from pale pinkish hues to deep, dark reds and purples. It combines warmth with richness.
-
-5. **YlGn **: A gradient moving from yellow to green, often progressing from light, bright yellow to deeper, more olive-like greens. It is a warm-to-cool gradient dominated by earthy greens and yellows.
-
-6. **BrBG **: A color scale with brown and blue hues, often transitioning from shades of brown and beige to dark blues and greens. It is typically used for diverging datasets, where both extremes of the color scale represent important values.
-
-7. **Oranges **: A gradient of orange hues, starting from light peach to deep burnt orange. The focus is on warmth and vibrancy, using a variety of orange shades to create a dynamic range.
-
-8. **PuOr **: A mix of purple and orange hues, transitioning from a deep purple to a bright orange. This scheme is used to represent diverging data, with purple and orange often symbolizing two opposing extremes.
-
-9. **RdYlBu **: A diverging color scheme that moves from red to yellow to blue, often starting with intense red shades, shifting to bright yellow, and ending with cool blue tones. This scheme is used for data that has a central, neutral value.
-
-10. **YlOrBr **: A gradient transitioning from yellow to orange and brown, with bright yellow moving to a deeper orange and eventually into earthy brown tones. It's used for a more natural or earthy representation.
-
-11. **BuGn **: A combination of blue and green, often progressing from light, soft blue to deeper, muted greens. It emphasizes a cool, serene feeling with harmonious color transitions.
-
-12. **OrRd **: An orange-to-red gradient that starts with soft orange tones and moves to more intense red hues, giving a warm and vibrant appearance. Often used for data that emphasizes intensity or heat.
-
-13. **PuRd **: A range of purple to red hues, typically starting with light purples and moving towards darker, more intense reds. The gradient evokes a warm, rich atmosphere.
-
-14. **RdYlGn **: A diverging scale that moves from red to yellow to green. This is often used in heatmaps to show extreme values in red, central values in yellow, and lower values in green, providing a clear visual representation of gradients in data.
-
-15. **YlOrRd **: A gradient moving from yellow to orange to red, with the scheme starting from light yellow and progressing through increasingly vibrant and deep orange and red tones. It suggests progression, intensity, and heat.
-
-16. **BuPu **: A combination of blue and purple hues, often starting with lighter blues and transitioning into deeper purples. It is used for cool, yet rich data visualizations.
-
-17. **PiYG **: A palette that combines pink, purple, and green hues, often creating a visually striking contrast. It transitions from vibrant pinks to deep purples and into fresh greens, giving a bold color representation.
-
-18. **Purples **: A gradient of purple tones, starting with light lavender and moving into darker, more royal purples. The scheme is primarily cool and offers a subtle and elegant progression.
-
-19. **Reds **: A range of red tones, from light pinkish hues to dark, intense reds. This scheme evokes warmth, energy, and intensity.
-
-20. **GnBu **: A gradient from green to blue, moving from soft, light greens to deeper, more intense blues. It is commonly used for visualizing natural or cool data patterns.
-
-21. **PRGn **: A palette that includes purple and green hues, with a range from deep purples to fresh greens. It is used for diverging data sets where the two extremes represent contrasting values.
-
-22. **RdBu **: A diverging color scheme moving from red to blue. It is widely used for datasets where extremes need to be represented with contrasting colors, making it suitable for visualizing opposites.
-
-23. **Spectral **: A range of colors that typically moves from red to orange, yellow, green, and blue, encompassing the full spectrum of colors. This scheme is used for diverse and colorful data visualizations, often in maps or datasets with multiple ranges.
-
-24. **Greens **: A palette of green hues, ranging from soft, light greens to deeper, more intense greens. This scheme is ideal for displaying data in natural, ecological, or growth contexts.
-
-25. **PuBu **: A gradient of purple to blue hues, moving from light purple to deep, cool blues. This color scheme emphasizes calm, cool, and tranquil tones.
-
-26. **RdGy **: A diverging color scheme combining red and grey tones. It transitions from vibrant reds to neutral greys, making it suitable for data where a neutral middle point is important.
-
-27. **YlGnBu **: A gradient that starts with light yellow and moves through green to blue, with the blue becoming deeper. This is used for visualizing data related to geographical or environmental metrics.
-
+| **Color Scheme** | **Description** |
+|------------------|-----------------|
+| **Blues**        | A range of blue shades, typically progressing from light to dark, creating a calming and cool gradient. It often starts with light sky blue and moves towards deeper, more navy-like tones. |
+| **Greys**        | A monochromatic scale with varying shades of grey, typically ranging from light silver to charcoal. This scheme focuses on neutrality and subtlety without strong color dominance. |
+| **PuBuGn**       | A blend of purple, blue, and green hues, often transitioning from lavender to aqua or mint. It typically features soft and cool colors, emphasizing a smooth gradient across the three main colors. |
+| **RdPu**         | A color scheme featuring shades of red and purple, transitioning from pale pinkish hues to deep, dark reds and purples. It combines warmth with richness. |
+| **YlGn**         | A gradient moving from yellow to green, often progressing from light, bright yellow to deeper, more olive-like greens. It is a warm-to-cool gradient dominated by earthy greens and yellows. |
+| **BrBG**         | A color scale with brown and blue hues, often transitioning from shades of brown and beige to dark blues and greens. It is typically used for diverging datasets, where both extremes of the color scale represent important values. |
+| **Oranges**      | A gradient of orange hues, starting from light peach to deep burnt orange. The focus is on warmth and vibrancy, using a variety of orange shades to create a dynamic range. |
+| **PuOr**         | A mix of purple and orange hues, transitioning from a deep purple to a bright orange. This scheme is used to represent diverging data, with purple and orange often symbolizing two opposing extremes. |
+| **RdYlBu**       | A diverging color scheme that moves from red to yellow to blue, often starting with intense red shades, shifting to bright yellow, and ending with cool blue tones. This scheme is used for data that has a central, neutral value. |
+| **YlOrBr**       | A gradient transitioning from yellow to orange and brown, with bright yellow moving to a deeper orange and eventually into earthy brown tones. It's used for a more natural or earthy representation. |
+| **BuGn**         | A combination of blue and green, often progressing from light, soft blue to deeper, muted greens. It emphasizes a cool, serene feeling with harmonious color transitions. |
+| **OrRd**         | An orange-to-red gradient that starts with soft orange tones and moves to more intense red hues, giving a warm and vibrant appearance. Often used for data that emphasizes intensity or heat. |
+| **PuRd**         | A range of purple to red hues, typically starting with light purples and moving towards darker, more intense reds. The gradient evokes a warm, rich atmosphere. |
+| **RdYlGn**       | A diverging scale that moves from red to yellow to green. This is often used in heatmaps to show extreme values in red, central values in yellow, and lower values in green, providing a clear visual representation of gradients in data. |
+| **YlOrRd**       | A gradient moving from yellow to orange to red, with the scheme starting from light yellow and progressing through increasingly vibrant and deep orange and red tones. It suggests progression, intensity, and heat. |
+| **BuPu**         | A combination of blue and purple hues, often starting with lighter blues and transitioning into deeper purples. It is used for cool, yet rich data visualizations. |
+| **PiYG**         | A palette that combines pink, purple, and green hues, often creating a visually striking contrast. It transitions from vibrant pinks to deep purples and into fresh greens, giving a bold color representation. |
+| **Purples**      | A gradient of purple tones, starting with light lavender and moving into darker, more royal purples. The scheme is primarily cool and offers a subtle and elegant progression. |
+| **Reds**         | A range of red tones, from light pinkish hues to dark, intense reds. This scheme evokes warmth, energy, and intensity. |
+| **GnBu**         | A gradient from green to blue, moving from soft, light greens to deeper, more intense blues. It is commonly used for visualizing natural or cool data patterns. |
+| **PRGn**         | A palette that includes purple and green hues, with a range from deep purples to fresh greens. It is used for diverging data sets where the two extremes represent contrasting values. |
+| **RdBu**         | A diverging color scheme moving from red to blue. It is widely used for datasets where extremes need to be represented with contrasting colors, making it suitable for visualizing opposites. |
+| **Spectral**     | A range of colors that typically moves from red to orange, yellow, green, and blue, encompassing the full spectrum of colors. This scheme is used for diverse and colorful data visualizations, often in maps or datasets with multiple ranges. |
+| **Greens**       | A palette of green hues, ranging from soft, light greens to deeper, more intense greens. This scheme is ideal for displaying data in natural, ecological, or growth contexts. |
+| **PuBu**         | A gradient of purple to blue hues, moving from
 
 ## 1. Discrete Color Schemes
 
