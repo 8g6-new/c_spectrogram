@@ -4,10 +4,11 @@ Libhaetmap offers a range of built-in color schemes to accommodate various data 
 
 | Subtype            | Description                                                                                                  |
 |--------------------|--------------------------------------------------------------------------------------------------------------|
-| **Discrete**        | Uses distinct colors for each data point or category. Best for categorical data with a small range. Lacks smooth transitions. Low dynamic range. |
+| **Discrete**        | Only <15 RGBA points. Best for categorical data with a small range. Lacks smooth transitions. Low dynamic range. |
+| **Soft**            | Uses a smooth gradient with high dynamic range, ideal for continuous data. Emphasizes subtle variations and smooth transitions. Perfect for highlighting gradual changes in data. |
 | **Mixed**           | Combines discrete colors and soft gradients, providing a balance of clarity and smoothness. Ideal for datasets with both categorical and continuous elements. Higher dynamic range than discrete. |
 | **Mixed Exponential** | Similar to the mixed scheme but with an exponential gradient that emphasizes higher values or spikes. Ideal for datasets with outliers or extreme values, providing stronger contrast in those areas. Even higher dynamic range. |
-| **Soft**            | Uses a smooth gradient with high dynamic range, ideal for continuous data. Emphasizes subtle variations and smooth transitions. Perfect for highlighting gradual changes in data. |
+
 
 
 ## Color Scheme Descriptions
