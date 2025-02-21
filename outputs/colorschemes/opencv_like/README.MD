@@ -4,7 +4,7 @@ These color schemes are inspired by the predefined color gradients available in 
 
 By following OpenCV's well-established color palettes, these schemes offer a familiar and consistent experience for users accustomed to the library's color representations. The color gradients represent a range of hues and transitions, ideal for visualizing data across different domains while maintaining the color characteristics defined by OpenCV.
 
-| Color Scheme       | Description |
+| Color Scheme    (enum ID)      | Description |
 |--------------------|-------------|
 | **AUTUMN**          | A warm and vibrant color scheme, progressing from reds and oranges to yellows, evoking feelings of coziness and nostalgia. |
 | **BONE**            | A soft, off-white color with subtle gray undertones, reminiscent of natural materials, often used for a neutral and calming effect. |
