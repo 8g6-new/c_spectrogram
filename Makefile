@@ -4,7 +4,7 @@ CFLAGS   = -Wall -Wextra -O3 -march=native -mtune=native -ffast-math \
            -funroll-loops -fpeel-loops -ftracer -ftree-vectorize \
            -ftree-loop-vectorize -fopt-info-vec-optimized -fopenmp \
            -mavx -mavx2 -mfma -msse4.2 -DDEBUG \
-           -flto=auto -fuse-linker-plugin -DMINIMP3_FLOAT_OUTPUT -fPIC -lopenblas
+           -flto=auto -fuse-linker-plugin -DMINIMP3_FLOAT_OUTPUT -fPIC -lopenblas 
 		   
 CFLAGS_DEBUG = -g -O0 -DDEBUG
 LDFLAGS  = -lm -lfftw3 -lfftw3f -lsndfile -lpng -g
@@ -19,6 +19,7 @@ BASE_SOURCES = main.c \
                $(SRCDIR)/libheatmap/heatmap_tools.c \
                $(SRCDIR)/png_tools/png_tools.c \
                $(SRCDIR)/utils/ftype_detect.c \
+			   $(SRCDIR)/utils/bench.c \
                $(SRCDIR)/audio_tools/audio_io.c \
                $(SRCDIR)/audio_tools/audio_visualizer.c \
                $(SRCDIR)/audio_tools/spectral_features.c
@@ -93,7 +94,7 @@ run:
 	  echo "Executable '$$LAST_TARGET' not found. Run 'make' first."; exit 1; \
 	fi; \
 	echo "Running $$LAST_TARGET..."; \
-	./$$LAST_TARGET "./tests/files/173.mp3"  black_woodpecke 2048 128 hann 512 128 7500 64
+	./$$LAST_TARGET "./tests/files/173.mp3"  black_woodpecke 2048 128 hann 512 128 7500 64 2 2 2 "./cache/FFT"
 
     # <ip_filename> <op_filename> <window_size> <hop_size> <window_type> <number_of_mel_banks> <min_mel> <max_mel> <num_coff
 
