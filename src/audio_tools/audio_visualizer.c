@@ -1,95 +1,148 @@
 #include "../../headers/audio_tools/audio_visualizer.h"
 
+
 inline float  brachless_db(float mag,bool db){
-    return !db*mag + db*log10f(1 + mag);
+    return !db*mag + db*log10f(1 + mag*mag);
 }
 
-inline void spectrogram(stft_d *result, const char *output_file,float min, float max,unsigned char bg_clr[4],bool db,int cs_enum) {
-    size_t w      = result->output_size;
-    size_t h      = (size_t)(result->num_frequencies * max) / (result->sample_rate / 2);
-    size_t min_f  = (size_t)(result->num_frequencies * min) / (result->sample_rate / 2);
+void print_bounds(bounds2d_t *bounds) {
+    printf("Time bounds:\n");
+    printf("  Start (f): %.2f\n", bounds->time.start_f);
+    printf("  End   (f): %.2f\n", bounds->time.end_f);
+    printf("  Start (d): %zu\n", bounds->time.start_d);
+    printf("  End   (d): %zu\n", bounds->time.end_d);
 
-    heatmap_t *hm = NULL;
-    unsigned char *image = heatmap_get_vars(w, (h - min_f), &hm);
+    printf("Frequency bounds:\n");
+    printf("  Start (f): %.2f\n", bounds->freq.start_f);
+    printf("  End   (f): %.2f\n", bounds->freq.end_f);
+    printf("  Start (d): %zu\n", bounds->freq.start_d);
+    printf("  End   (d): %zu\n", bounds->freq.end_d);
+}
+
+void set_limits(bounds2d_t *bounds,const size_t max_freq,const size_t max_time){
+    bounds->time.end_d  = max_time;
+}
+
+void init_bounds(bounds2d_t *bounds,stft_d *result){
+    bounds->time.start_d = 0;
+
+    bounds->freq.start_d = hz_to_index(result->num_frequencies,result->sample_rate,bounds->freq.start_f);
+    bounds->freq.end_d   = hz_to_index(result->num_frequencies,result->sample_rate,bounds->freq.end_f);
+}
+
+void fast_copy(float *contious_mem,float *mags,bounds2d_t *bounds,const size_t length){
+    const size_t freq_range = bounds->freq.end_d - bounds->freq.start_d;
+    const size_t copy_size  = freq_range * sizeof(float);
+     
+    for (size_t t = bounds->time.start_d; t < bounds->time.end_d; t++) {
+        memcpy(contious_mem + (t - bounds->time.start_d) * freq_range,mags + t * length + bounds->freq.start_d,copy_size);
+    }
+}
+
+
+inline void spectrogram(float *contious_mem, bounds2d_t *bounds, plot_t *settings) {
+    heatmap_t *hm        = NULL;
+    const size_t w       = bounds->time.end_d - bounds->time.start_d;
+    const size_t h       = bounds->freq.end_d - bounds->freq.start_d;
+    const bool db        = settings->db;
+    const size_t tstart  = bounds->time.start_d;
+    const size_t tend    = bounds->time.end_d;
+    unsigned char *image = heatmap_get_vars(w, h, &hm);
 
     if (!image || !hm) {
         fprintf(stderr, "Failed to allocate heatmap.\n");
         return;
     }
-    #pragma omp parallel for
-    for (size_t t = 0; t < w; t++) {
-        for (size_t f = min_f; f < h; f++) {
-            size_t inverted_axis = (h - f - 1); 
-            float mag = result->magnitudes[t * result->num_frequencies + inverted_axis];
-            mag =  brachless_db(mag,db);
-            heatmap_add_weighted_point(hm, t, f , mag); 
+
+     
+    #pragma omp parallel for schedule(static)
+    for (size_t t = tstart; t < tend; t++) {
+        const size_t offset = (t - tstart) * h;
+        for (size_t f = 0; f < h; f++) {
+            const float val = brachless_db(contious_mem[offset + f], db);
+            heatmap_add_weighted_point(hm, t - tstart, h-f-1, val);
         }
     }
 
-    save_heatmap(image,&hm,output_file,w,h-min_f,bg_clr,cs_enum);
-
+    save_heatmap(image, &hm, settings->output_file, w, h, settings->bg_color, settings->cs_enum);
 }
 
-
-inline float *mel_spectrogram(stft_d *result,const char *output_file,size_t num_filters,float *mel_filter_bank,unsigned char bg_clr[4],bool db,int cs_enum){
+float *mel_spectrogram(float *contious_mem,const size_t num_filters,const size_t num_freq,float *mel_filter_bank, bounds2d_t *bounds, plot_t *settings){
     
-    size_t w             = result->output_size;
-    size_t h             = result->num_frequencies;
+    heatmap_t *hm        = NULL;
+    const size_t w       = bounds->time.end_d - bounds->time.start_d;
+    const size_t h       = bounds->freq.end_d - bounds->freq.start_d;
+    const bool db        = settings->db;
+    const size_t tstart  = bounds->time.start_d;
+    const size_t tend    = bounds->time.end_d;
+    unsigned char *image = heatmap_get_vars(w,num_filters,&hm);
 
-    
     float *mel_values    = (float*) malloc(num_filters * w * sizeof(float));
 
-    heatmap_t *hm        = NULL;
-    
-    unsigned char *image = heatmap_get_vars(w, num_filters, &hm);
-
-    if (!image || !hm) {
-        fprintf(stderr, "Failed to allocate heatmap.\n");
-        return NULL;
-    }
-
-    #pragma omp parallel for
-    for (size_t t = 0; t < w; t++) {
-        for (size_t mel = 0; mel < num_filters; mel++){
-            float sum = 0; 
-            for (size_t f = 0; f < h; f++) {
-                size_t inverted_axis = (h-f-1); 
-
-                float mag   = result->magnitudes[t*h+inverted_axis];
-
-                sum+=mel_filter_bank[(num_filters - mel - 1) * h+inverted_axis] * mag*mag;
-            }
-
-            sum =  brachless_db(sum,db);
-            
-            mel_values[t*num_filters+(num_filters - mel - 1)] =  sum;
-
-            heatmap_add_weighted_point(hm, t, mel,sum); 
+    #pragma omp parallel for 
+    for (size_t t = tstart; t < tend; t++) {
+        const size_t offset1 = (t - tstart) * h;
+        const size_t offset3 = t * num_filters;
+        float sum;
+        for (size_t mel = 0; mel < num_filters; mel++) {
+            const size_t offset2      = mel * num_freq;
+            sum                       = cblas_sdot(h, &contious_mem[offset1], 1, &mel_filter_bank[offset2], 1);
+            sum                       = brachless_db(sum,db);
+            mel_values[offset3 + mel] = sum;
+            heatmap_add_weighted_point(hm, t - tstart, num_filters - mel, sum);
         }
     }
 
-    save_heatmap(image,&hm,output_file,w,num_filters,bg_clr,cs_enum);
+    
+    save_heatmap(image, &hm, settings->output_file,w,num_filters,settings->bg_color, settings->cs_enum);
 
     return mel_values;
 }
 
-inline void mfcc(float *mel_values,const char *output_file,size_t w,size_t num_filters,size_t num_coff,unsigned char bg_clr[4],int cs_enum){
 
-    heatmap_t *hm = NULL;
-    unsigned char *image = heatmap_get_vars(w, num_coff, &hm);
+mffc_t precompute_cosine_coeffs(const size_t num_filters, const size_t num_coff) {
+    mffc_t dft_coff = {
+        .num_filters = num_filters,
+        .num_coff = num_coff,
+        .coeffs = malloc(num_filters * num_coff * sizeof(float))
+    };
 
-    #pragma omp parallel for
-    for (size_t t = 0; t < w; t++) {
-        for(size_t n=0;n<num_coff;n++){
-            float sum = 0;
-            for (size_t mel = 0; mel < num_filters; mel++){   
-                sum+=(cos((M_PI/num_filters)*(mel+0.5)*n))  * mel_values[t*num_filters + mel];
-            }
-            heatmap_add_weighted_point(hm, t,num_coff - n-1, sum*sum);
+    if (!dft_coff.coeffs) {
+        return dft_coff; 
+    }
+
+    const float scale = sqrtf(2.0f / (float)num_filters);
+
+    #pragma omp parallel for schedule(static, 256)
+    for (size_t n = 0; n < num_coff; n++) {
+        for (size_t mel = 0; mel < num_filters; mel++) {
+            dft_coff.coeffs[n * num_filters + mel] = scale *
+                cosf((float)M_PI / num_filters * (mel + 0.5f) * n);
         }
     }
 
-    save_heatmap(image,&hm,output_file,w,num_coff,bg_clr,cs_enum);
-
+    return dft_coff;
 }
 
+inline void mfcc(float *mel_values, mffc_t *dft_coff, bounds2d_t *bounds, plot_t *settings) {
+    heatmap_t *hm            = NULL;
+    const bool db            = settings->db;
+    const size_t tstart      = bounds->time.start_d;
+    const size_t tend        = bounds->time.end_d;
+    const size_t w           = tend - tstart;
+
+    const size_t num_filters = dft_coff->num_filters;
+    const size_t num_coff    = dft_coff->num_coff;
+    unsigned char *image     = heatmap_get_vars(w, num_coff, &hm);
+
+
+    #pragma omp parallel for 
+    for (size_t t = tstart; t < tend; t++) {
+        for (size_t n = 0; n < num_coff; n++) {
+            float sum = cblas_sdot(num_filters,&dft_coff->coeffs[n * num_filters], 1,&mel_values[t * num_filters], 1);
+            heatmap_add_weighted_point(hm, t - tstart,num_coff - n - 1,brachless_db(sum, db));
+        }
+    }
+
+    save_heatmap(image, &hm, settings->output_file, w, num_coff, settings->bg_color, settings->cs_enum);
+}

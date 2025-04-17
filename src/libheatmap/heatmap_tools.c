@@ -15,7 +15,6 @@ unsigned char* heatmap_get_vars(size_t w, size_t h,heatmap_t **hm_out) {
     
     if (!hm) {
         fprintf(stderr, "Failed to create heatmap.\n");
-        free(image);
         return NULL;
     }
 
@@ -35,11 +34,12 @@ int save_heatmap(unsigned char *image,heatmap_t **hm,char *output_file,size_t w,
 
     heatmap_render_to(*hm,scheme,&image[0]);
 
-
     add_bg(image, w,h, bg_clr);
-    heatmap_free(*hm);
-
     save_png(output_file,image,w,h);
+
+    free(image);
+    heatmap_free(*hm);
+    heatmap_colorscheme_free(scheme);
 }
 
 

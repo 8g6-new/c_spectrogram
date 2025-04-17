@@ -76,7 +76,7 @@ char *fetch_color_builtin(cs_enum type,bool log){
   if(log)
         printf("enum %d => libheatmap builtin color scheme : main type %s , subtype %s",type,main_cs[(int) type/4],color_subtypes[cs[type]->type]);
 
-   char *buffer   = malloc(20);
+   char buffer[20];
    sprintf(buffer, "%s_%s",main_cs[(int) type/4],color_subtypes[cs[type]->type]);
    return buffer; 
 }
