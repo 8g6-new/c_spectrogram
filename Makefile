@@ -45,7 +45,7 @@ DBGFLAGS+=-fsanitize=leak#          => Enables leak detection
 DBGFLAGS+=-fsanitize=undefined#     => Enables Undefined Behavior Sanitizer (UBSan)
 
 
-LIBFLAGS = -DMINIMP3_FLOAT_OUTPUT -fopenmp -lopenblas
+LIBFLAGS = -DMINIMP3_FLOAT_OUTPUT
 WARNFLAGS = -Wall -Wextra 
 
 OPTFLAGS = -ffast-math -march=native -mtune=native -funroll-loops -fpeel-loops -ftracer -flto -fuse-linker-plugin -floop-block -floop-interchange -floop-unroll-and-jam -fipa-pta -fipa-cp -fipa-sra -fipa-icf
@@ -53,7 +53,7 @@ VECFLAGS = -ftree-vectorize -ftree-loop-vectorize -fopt-info-vec-optimized -mavx
 
 CFLAGS = $(WARNFLAGS) $(OPTFLAGS) $(VECFLAGS) $(LIBFLAGS)
 CFLAGS_DEBUG = -g -O0 -DDEBUG
-LDFLAGS = -lm -lfftw3 -lfftw3f -lsndfile -lpng
+LDFLAGS = -lm -lfftw3 -lfftw3f -lsndfile -lpng -fopenmp -lopenblas 
 
 # Directory Structure
 SRCDIR     = src
@@ -171,7 +171,7 @@ run:
 	  echo "Executable '$$LAST_TARGET' not found. Run 'make' first."; exit 1; \
 	fi; \
 	echo "Running $$LAST_TARGET..."; \
-	./$$LAST_TARGET "/home/dsb/disks/data/paper/c/mean/data/c_spectrogram/TurboVAD/bird.mp3" bird 2048 128 hann 256 0 7500 64 2 3 4 "./cache/FFT"
+	./$$LAST_TARGET "./tests/files/30.mp3" bird 2048 128 hann 1024 0 7500 64 2 3 4 "./cache/FFT"
 
 clean:
 	rm -rf $(BUILDDIR)

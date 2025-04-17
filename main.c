@@ -73,10 +73,15 @@ int main(int argc, char *argv[]) {
         START_TIMING();
         float *window_values           = (float*) malloc(window_size * sizeof(float));    // pre cal to avoid repated calc
         window_function(window_values,window_size,window_type);
+        END_TIMING("stft window");
+        START_TIMING();
+        START_TIMING();
         float *mel_filter_bank  = (float*) calloc((num_frequencies + 1) * (num_filters + 2), sizeof(float)); // type casting to enforce type safety && zero value init ;
         melbank_t non_zero      = mel_filter(min_mel,max_mel,num_filters,audio.sample_rate,window_size,mel_filter_bank);   // pre cal to avoid repated calc
+        END_TIMING("mel filter bank");
+        START_TIMING();
         mffc_t dft_coff         = precompute_cosine_coeffs(num_filters,num_coff);
-        END_TIMING("init");
+        END_TIMING("dtft coff");
 
     
 

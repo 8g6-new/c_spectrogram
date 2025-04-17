@@ -1,7 +1,7 @@
 #include "../../headers/audio_tools/spectral_features.h"
 
 #define CALCULATE_MAGNITUDE 1
-#define CALCULATE_PHASE 1
+#define CALCULATE_PHASE 0
 
 inline size_t hz_to_index(size_t num_freq, size_t sample_rate, float f) {
     return (size_t)((num_freq * f) / (sample_rate / 2.0f));
@@ -403,7 +403,6 @@ melbank_t mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_
     non_zero.freq_indexs = realloc(non_zero.freq_indexs, non_zero.size * sizeof(size_t));
     non_zero.weights     = realloc(non_zero.weights,     non_zero.size * sizeof(float));
 
-
     return non_zero;
 
 }
@@ -590,7 +589,7 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
         fft_d *thread_fft = &thread_ffts[thread_id];
 
         if (thread_fft->plan) {
-            #pragma omp for schedule(static)
+            #pragma omp for simd
             for (size_t i = 0; i < max_i; i++) {
                 const size_t start_idx = i * hop_size;
         
@@ -611,7 +610,7 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
         }
     }
     
-    cleanup_fft_threads(thread_ffts,num_threads);
+    // cleanup_fft_threads(thread_ffts,num_threads);
     
     return result;
 }
