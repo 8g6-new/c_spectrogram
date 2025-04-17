@@ -1,31 +1,256 @@
 #include "../../headers/audio_tools/spectral_features.h"
 
-#define CALCULATE_MAGNITUDE 1   
-#define CALCULATE_PHASE     1  
+#define CALCULATE_MAGNITUDE 1
+#define CALCULATE_PHASE 1
 
-void compute_magnitudes_and_phases_scalar(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t count) {
+inline size_t hz_to_index(size_t num_freq, size_t sample_rate, float f) {
+    return (size_t)((num_freq * f) / (sample_rate / 2.0f));
+}
+
+static inline void compute_magnitudes_and_phases_scalar(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t count) {
     for (size_t j = 0; j < count; j++) {
         const float real = out[j][0];
         const float imag = out[j][1];
 
         #ifdef CALCULATE_MAGNITUDE
-            magnitudes[offset + j] = sqrtf(real * real + imag * imag);
+        magnitudes[offset + j] = sqrtf(real * real + imag * imag);
         #endif
 
         #ifdef CALCULATE_PHASE
-            phases[offset + j] = atan2f(imag, real);
+        phases[offset + j] = atan2f(imag, real);
         #endif
     }
 }
 
 
-inline  double hz_to_mel(double f, float mid_f) {
-    return mid_f * log10(1 + f / 700.0);
+static inline __m128 atan2_ps_sse(__m128 y, __m128 x) {
+    const __m128 zero = _mm_set1_ps(0.0f);
+    const __m128 one = _mm_set1_ps(1.0f);
+    const __m128 pi = _mm_set1_ps(3.14159265358979323846f);
+    const __m128 pi_2 = _mm_set1_ps(1.57079632679489661923f);
+    const __m128 pi_4 = _mm_set1_ps(0.785398163397448309616f);
+    const __m128 c = _mm_set1_ps(0.273f);
+
+    // Prevent divide-by-zero
+    const __m128 safe_x = _mm_blendv_ps(x, _mm_set1_ps(1e-10f), _mm_cmpeq_ps(x, zero));
+    const __m128 z = _mm_div_ps(y, safe_x);
+    const __m128 abs_z = _mm_andnot_ps(_mm_set1_ps(-0.0f), z); // clear sign bit
+
+    // atan(z) ≈ z * pi/4 + c * z * (|z| - 1)
+    const __m128 term = _mm_mul_ps(c, _mm_mul_ps(_mm_sub_ps(abs_z, one), z));
+    const __m128 atan = _mm_fmadd_ps(z, pi_4, term);
+
+    // Adjust results based on quadrant
+    __m128 result = atan;
+    const __m128 x_neg = _mm_cmplt_ps(x, zero);
+    const __m128 y_neg = _mm_cmplt_ps(y, zero);
+    const __m128 y_pos = _mm_cmpgt_ps(y, zero);
+    const __m128 x_zero = _mm_cmpeq_ps(x, zero);
+
+    result = _mm_blendv_ps(result, _mm_add_ps(atan, pi), _mm_andnot_ps(y_neg, x_neg));      // x < 0, y ≥ 0
+    result = _mm_blendv_ps(result, _mm_sub_ps(atan, pi), _mm_and_ps(x_neg, y_neg));          // x < 0, y < 0
+    result = _mm_blendv_ps(result, pi_2, _mm_and_ps(x_zero, y_pos));                            // x == 0, y > 0
+    result = _mm_blendv_ps(result, _mm_sub_ps(zero, pi_2), _mm_and_ps(x_zero, y_neg));       // x == 0, y < 0
+
+    return result;
 }
 
-inline  double mel_to_hz(double m, float mid_f) {
-    return 700.0 * (pow(10, m / mid_f) - 1);
+static inline void compute_magnitudes_and_phases_sse(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t num_frequencies) {
+    const size_t simd_limit = num_frequencies & ~3UL; // multiple of 4
+    float *real_ptr = &out[0][0];
+    float *imag_ptr = &out[0][1];
+    const size_t stride = 2;
+
+    for (size_t j = 0; j < simd_limit; j += 4) {
+        __m128 real_vals = _mm_loadu_ps(real_ptr + j * stride);
+        __m128 imag_vals = _mm_loadu_ps(imag_ptr + j * stride);
+
+        #ifdef CALCULATE_MAGNITUDE
+                __m128 imag_squared = _mm_mul_ps(imag_vals, imag_vals);
+                __m128 sum = _mm_add_ps(_mm_mul_ps(real_vals, real_vals), imag_squared);
+                __m128 magnitudes_vals = _mm_sqrt_ps(sum);
+                _mm_storeu_ps(&magnitudes[offset + j], magnitudes_vals);
+        #endif
+
+        #ifdef CALCULATE_PHASE
+                __m128 phase_vals = atan2_ps_sse(imag_vals, real_vals);
+                _mm_storeu_ps(&phases[offset + j], phase_vals);
+        #endif
+    }
+
+    if (simd_limit < num_frequencies) {
+        compute_magnitudes_and_phases_scalar(out + simd_limit, magnitudes, phases, offset + simd_limit, num_frequencies - simd_limit);
+    }
 }
+
+static inline __m256 atan2_ps_avx(__m256 y, __m256 x) {
+    const __m256 zero = _mm256_set1_ps(0.0f);
+    const __m256 one = _mm256_set1_ps(1.0f);
+    const __m256 pi = _mm256_set1_ps(3.14159265358979323846f);
+    const __m256 pi_2 = _mm256_set1_ps(1.57079632679489661923f);
+    const __m256 pi_4 = _mm256_set1_ps(0.785398163397448309616f);
+    const __m256 c = _mm256_set1_ps(0.273f);
+
+    // Prevent divide-by-zero
+    const __m256 safe_x = _mm256_blendv_ps(x, _mm256_set1_ps(1e-10f), _mm256_cmp_ps(x, zero, _CMP_EQ_OS));
+    const __m256 z = _mm256_div_ps(y, safe_x);
+    const __m256 abs_z = _mm256_andnot_ps(_mm256_set1_ps(-0.0f), z); // clear sign bit
+
+    // atan(z) ≈ z * pi/4 + c * z * (|z| - 1)
+    const __m256 term = _mm256_mul_ps(c, _mm256_mul_ps(_mm256_sub_ps(abs_z, one), z));
+    const __m256 atan = _mm256_fmadd_ps(z, pi_4, term);
+
+    // Adjust results based on quadrant
+    __m256 result = atan;
+    const __m256 x_neg = _mm256_cmp_ps(x, zero, _CMP_LT_OS);
+    const __m256 y_neg = _mm256_cmp_ps(y, zero, _CMP_LT_OS);
+    const __m256 y_pos = _mm256_cmp_ps(y, zero, _CMP_GT_OS);
+    const __m256 x_zero = _mm256_cmp_ps(x, zero, _CMP_EQ_OS);
+
+    result = _mm256_blendv_ps(result, _mm256_add_ps(atan, pi), _mm256_andnot_ps(y_neg, x_neg));      // x < 0, y ≥ 0
+    result = _mm256_blendv_ps(result, _mm256_sub_ps(atan, pi), _mm256_and_ps(x_neg, y_neg));          // x < 0, y < 0
+    result = _mm256_blendv_ps(result, pi_2, _mm256_and_ps(x_zero, y_pos));                            // x == 0, y > 0
+    result = _mm256_blendv_ps(result, _mm256_sub_ps(zero, pi_2), _mm256_and_ps(x_zero, y_neg));       // x == 0, y < 0
+
+    return result;
+}
+
+static inline void compute_magnitudes_and_phases_avx(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t num_frequencies) {
+    const size_t simd_limit = num_frequencies & ~7UL; // multiple of 8
+    float *real_ptr = &out[0][0];
+    float *imag_ptr = &out[0][1];
+    const size_t stride = 2;
+
+    for (size_t j = 0; j < simd_limit; j += 8) {
+        __m256 real_vals = _mm256_loadu_ps(real_ptr + j * stride);
+        __m256 imag_vals = _mm256_loadu_ps(imag_ptr + j * stride);
+
+        #ifdef CALCULATE_MAGNITUDE
+        // FMA: real*real + imag*imag
+        __m256 imag_squared = _mm256_mul_ps(imag_vals, imag_vals);
+        __m256 sum = _mm256_fmadd_ps(real_vals, real_vals, imag_squared);
+        __m256 magnitudes_vals = _mm256_sqrt_ps(sum);
+        _mm256_storeu_ps(&magnitudes[offset + j], magnitudes_vals);
+        #endif
+
+        #ifdef CALCULATE_PHASE
+        __m256 phase_vals = atan2_ps_avx(imag_vals, real_vals); // your own AVX atan2
+        _mm256_storeu_ps(&phases[offset + j], phase_vals);
+        #endif
+    }
+
+    if (simd_limit < num_frequencies) {
+        compute_magnitudes_and_phases_scalar(out + simd_limit, magnitudes, phases, offset + simd_limit, num_frequencies - simd_limit);
+    }
+}
+
+
+
+
+static inline void compute_magnitudes_and_phases_sse2(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t num_frequencies) {
+    const size_t simd_limit = num_frequencies & ~3UL; // Round down to multiple of 4
+    float *real_ptr = &out[0][0];
+    float *imag_ptr = &out[0][1];
+    const size_t stride = 2;
+
+    for (size_t j = 0; j < simd_limit; j += 4) {
+        __m128 real_vals = _mm_loadu_ps(real_ptr + j * stride);
+        __m128 imag_vals = _mm_loadu_ps(imag_ptr + j * stride);
+
+        #ifdef CALCULATE_MAGNITUDE
+        __m128 real_squared = _mm_mul_ps(real_vals, real_vals);
+        __m128 imag_squared = _mm_mul_ps(imag_vals, imag_vals);
+        __m128 sum = _mm_add_ps(real_squared, imag_squared);
+        __m128 magnitudes_vals = _mm_sqrt_ps(sum);
+        _mm_storeu_ps(&magnitudes[offset + j], magnitudes_vals);
+        #endif
+
+        #ifdef CALCULATE_PHASE
+        __m128 phase_vals = atan2_ps_sse(imag_vals, real_vals);
+        _mm_storeu_ps(&phases[offset + j], phase_vals);
+        #endif
+    }
+
+    if (simd_limit < num_frequencies) {
+        compute_magnitudes_and_phases_scalar(out + simd_limit, magnitudes, phases, offset + simd_limit, num_frequencies - simd_limit);
+    }
+}
+
+// static inline __m512 atan2_ps_avx512(__m512 y, __m512 x) {
+//     const __m512 zero = _mm512_set1_ps(0.0f);
+//     const __m512 one = _mm512_set1_ps(1.0f);
+//     const __m512 pi = _mm512_set1_ps(3.14159265358979323846f);
+//     const __m512 pi_2 = _mm512_set1_ps(1.57079632679489661923f);
+//     const __m512 pi_4 = _mm512_set1_ps(0.785398163397448309616f);
+//     const __m512 c = _mm512_set1_ps(0.273f);
+
+//     // Prevent divide-by-zero
+//     const __m512 safe_x = _mm512_mask_blend_ps(_mm512_cmpeq_ps_mask(x, zero), x, _mm512_set1_ps(1e-10f));
+//     const __m512 z = _mm512_div_ps(y, safe_x);
+//     const __m512 abs_z = _mm512_andnot_ps(_mm512_set1_ps(-0.0f), z); // clear sign bit
+
+//     // atan(z) ≈ z * pi/4 + c * z * (|z| - 1)
+//     const __m512 term = _mm512_mul_ps(c, _mm512_mul_ps(_mm512_sub_ps(abs_z, one), z));
+//     const __m512 atan = _mm512_fmadd_ps(z, pi_4, term);
+
+//     // Adjust results based on quadrant
+//     __m512 result = atan;
+//     const __mmask16 x_neg_mask = _mm512_cmplt_ps_mask(x, zero);
+//     const __mmask16 y_neg_mask = _mm512_cmplt_ps_mask(y, zero);
+//     const __mmask16 y_pos_mask = _mm512_cmpgt_ps_mask(y, zero);
+//     const __mmask16 x_zero_mask = _mm512_cmpeq_ps_mask(x, zero);
+
+//     result = _mm512_mask_blend_ps(_mm512_kandn(y_neg_mask, x_neg_mask), result, _mm512_add_ps(atan, pi));     // x < 0, y ≥ 0
+//     result = _mm512_mask_blend_ps(_mm512_kand(x_neg_mask, y_neg_mask), result, _mm512_sub_ps(atan, pi));       // x < 0, y < 0
+//     result = _mm512_mask_blend_ps(_mm512_kand(x_zero_mask, y_pos_mask), result, pi_2);                         // x == 0, y > 0
+//     result = _mm512_mask_blend_ps(_mm512_kand(x_zero_mask, y_neg_mask), result, _mm512_sub_ps(zero, pi_2));    // x == 0, y < 0
+
+//     return result;
+// }
+
+// static inline  void compute_magnitudes_and_phases_avx512(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t num_frequencies) {
+//     const size_t simd_limit = num_frequencies & ~15UL; // multiple of 16
+//     float *real_ptr = &out[0][0];
+//     float *imag_ptr = &out[0][1];
+//     const size_t stride = 2;
+
+//     for (size_t j = 0; j < simd_limit; j += 16) {
+//         __m512 real_vals = _mm512_loadu_ps(real_ptr + j * stride);
+//         __m512 imag_vals = _mm512_loadu_ps(imag_ptr + j * stride);
+
+//         #ifdef CALCULATE_MAGNITUDE
+//                 __m512 imag_squared = _mm512_mul_ps(imag_vals, imag_vals);
+//                 __m512 sum = _mm512_fmadd_ps(real_vals, real_vals, imag_squared);
+//                 __m512 magnitudes_vals = _mm512_sqrt_ps(sum);
+//                 _mm512_storeu_ps(&magnitudes[offset + j], magnitudes_vals);
+//         #endif
+
+//         #ifdef CALCULATE_PHASE
+//                 __m512 phase_vals = atan2_ps_avx512(imag_vals, real_vals);
+//                 _mm512_storeu_ps(&phases[offset + j], phase_vals);
+//         #endif
+//     }
+
+//     if (simd_limit < num_frequencies) {
+//         compute_magnitudes_and_phases_scalar(out + simd_limit, magnitudes, phases, offset + simd_limit, num_frequencies - simd_limit);
+//     }
+// }
+
+// void compute_magnitudes_and_phases_simd(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t num_frequencies) {
+//     #if defined(__AVX512F__)
+//         compute_magnitudes_and_phases_avx512(out, magnitudes, phases, offset, num_frequencies);
+//     #elif defined(__AVX__)
+//         compute_magnitudes_and_phases_avx(out, magnitudes, phases, offset, num_frequencies);
+//     #elif defined(__SSE2__)
+//         compute_magnitudes_and_phases_sse2(out, magnitudes, phases, offset, num_frequencies);
+//     #else
+//         compute_magnitudes_and_phases_scalar(out, magnitudes, phases, offset, num_frequencies);
+//     #endif
+// }
+
+
+
+
 
 inline void free_fft(fft_d *fft) {
     if (fft) {
@@ -43,6 +268,8 @@ inline void free_fft(fft_d *fft) {
         }
     }
 }
+
+
 
 void cleanup_fft_threads(fft_d *thread_ffts, const size_t num_threads) {
     if (!thread_ffts) return;
@@ -70,6 +297,13 @@ void free_stft(stft_d *result) {
 
 
 inline bool init_fft_output(stft_d *result, unsigned int window_size, unsigned int hop_size, unsigned int num_samples) {
+
+    if(hop_size<=0)
+      perror("Hop size should be >= 0");
+
+    if(window_size<=0)
+      perror("Hop size should be >= 0");
+
     if (!result) return false;
 
     result->phasers         = NULL;
@@ -93,46 +327,86 @@ inline bool init_fft_output(stft_d *result, unsigned int window_size, unsigned i
     return true;
 }
 
-
-
-
-
-inline size_t safe_diff(size_t a, size_t b) {
-    return a==b ? 1 : a-b;
+inline  double hz_to_mel(double f, float mid_f) {
+    return mid_f * log10(1 + f / 700.0);
 }
 
-void mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_t fft_size, float *filter) {
-    int fft_d = (int)fft_size / 2;
+inline  double mel_to_hz(double m, float mid_f) {
+    return 700.0 * (pow(10, m / mid_f) - 1);
+}
 
-    float mid = 2595.0;
+void print_melbank(const melbank_t *v) {
+    if (!v || !v->weights || v->size == 0) {
+        printf("melbank is empty or NULL.\n");
+        return;
+    }
 
-    float mel_min = hz_to_mel(min_f, mid);
-    float mel_max = hz_to_mel(max_f, mid);
+    printf("melbank size: %zu\n", v->size);
 
-    float mel_step = (mel_max - mel_min) / (n_filters + 1);
+    for (size_t i = 0; i < v->size;i++) 
+        printf("Index %zu -> x: %zu, Weight: %.6f\n",i, v->freq_indexs[i],v->weights[i]);
+}
 
-    size_t freq_bins[n_filters + 2];
+float safe_div(float a,float b){
+    return b==0 ? 0.0f : a/b;
+}
 
+melbank_t mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_t fft_size, float *filter) {
+
+    melbank_t non_zero      = { .freq_indexs = NULL, .weights = NULL, .size = 0 ,.num_filters=n_filters };
+   
+    const size_t avg_length = n_filters * 5;
+    non_zero.freq_indexs    = malloc( avg_length * sizeof(size_t));
+    non_zero.weights        = malloc( avg_length * sizeof(float));
+    
+    size_t num_f            = (fft_size / 2);
+    float mel_mid           = 2595.0f;
+    float mel_min           = hz_to_mel(min_f, mel_mid);
+    float mel_max           = hz_to_mel(max_f, mel_mid);
+    float mel_step          = (mel_max - mel_min) / (n_filters + 1);
+    
+    float freq_bins[n_filters + 2];
+
+    float mel,hz;
+    
     for (size_t i = 0; i < n_filters + 2; i++) {
-        float hz = mel_to_hz(mel_min + (mel_step * i), mid);
-        freq_bins[i] = (size_t)round(hz * fft_size / sr);
+        mel          = mel_min + (mel_step * i);
+        hz           = mel_to_hz(mel,mel_mid);
+        freq_bins[i] = hz * (float)(num_f) / (sr / 2);
     }
 
-    for (size_t m = 0; m < n_filters; m++) {
-        size_t start_bin = freq_bins[m];
-        size_t mid_bin = freq_bins[m + 1];
-        size_t end_bin = freq_bins[m + 2];
+    for (size_t m = 1; m <= n_filters; m++) {
+        float left   = freq_bins[m - 1];
+        float center = freq_bins[m];
+        float right  = freq_bins[m + 1];
+        
+        int k_start = (int)floorf(left);
+        int k_end   = (int)ceilf(right);
 
-        for (size_t f = start_bin; f <= mid_bin; f++) {
-            filter[m * fft_d + f] = (float)(f - start_bin) / safe_diff(mid_bin,start_bin);
-        }
-
-        for (size_t f = mid_bin + 1; f <= end_bin; f++) {
-            filter[m * fft_d + f] = (float)(end_bin - f) / safe_diff(end_bin,mid_bin);
+        for (int k = k_start; k <= k_end; k++) {  
+            if (k < 0 || k >= num_f) continue;
+            
+            if (left <= k && k < center) {
+                non_zero.weights[non_zero.size]     = (k - left) / (center - left);
+                filter[(m - 1) * num_f + k]         =  non_zero.weights[non_zero.size];
+                non_zero.freq_indexs[non_zero.size] = k;
+                non_zero.size++;
+            } else if (center <= k && k <= right) {
+                non_zero.weights[non_zero.size]     = (right - k) / (right - center);
+                filter[(m - 1) * num_f + k]         =  non_zero.weights[non_zero.size];
+                non_zero.freq_indexs[non_zero.size] = k;
+                non_zero.size++;
+            }
         }
     }
+
+    non_zero.freq_indexs = realloc(non_zero.freq_indexs, non_zero.size * sizeof(size_t));
+    non_zero.weights     = realloc(non_zero.weights,     non_zero.size * sizeof(float));
+
+
+    return non_zero;
+
 }
-
 
 void window_function(float *window_values, size_t window_size, const char *window_type) {
     if (strcmp(window_type, "hann") == 0) {
@@ -264,7 +538,15 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
 
     result.output_size           = max_i;
 
-    const size_t num_threads     = omp_get_max_threads();
+
+
+    const size_t num_threads = omp_get_max_threads();
+    
+
+    printf("\nNum therads : %zu : ",num_threads);
+     
+    omp_set_num_threads(num_threads);
+
     fft_d *thread_ffts           = (fft_d*)malloc(num_threads * sizeof(fft_d));
     
     if (!thread_ffts) {
@@ -276,8 +558,8 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
     {
         int thread_id = omp_get_thread_num();
         
-        thread_ffts[thread_id].in  = (fftwf_complex*)fftwf_malloc(window_size * sizeof(fftwf_complex));
-        thread_ffts[thread_id].out = (fftwf_complex*)fftwf_malloc(window_size * sizeof(fftwf_complex));
+        thread_ffts[thread_id].in  = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
+        thread_ffts[thread_id].out = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
         
         #pragma omp critical
         {
@@ -301,17 +583,17 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
         }
     }
 
-    
+     
     #pragma omp parallel
     {
         int thread_id     = omp_get_thread_num();
         fft_d *thread_fft = &thread_ffts[thread_id];
 
         if (thread_fft->plan) {
-            #pragma omp for 
+            #pragma omp for schedule(static)
             for (size_t i = 0; i < max_i; i++) {
-                const size_t start_idx = i * hop_size ;
-
+                const size_t start_idx = i * hop_size;
+        
                 for (size_t j = 0; j < window_size; j++) {
                     float sum = 0.0f;
                     for (size_t ch = 0; ch < channels; ch++) {
@@ -320,15 +602,15 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
                     thread_fft->in[j][0] = (sum * window_values[j]) / channels;
                     thread_fft->in[j][1] = 0.0f;
                 }
-
+        
                 fftwf_execute(thread_fft->plan);
-
+        
                 const size_t offset = i * num_frequencies;
-                compute_magnitudes_and_phases_scalar(thread_fft->out,result.magnitudes,result.phases,offset,num_frequencies);
+                compute_magnitudes_and_phases_scalar(thread_fft->out, result.magnitudes, result.phases, offset, num_frequencies);
             }
         }
     }
-
+    
     cleanup_fft_threads(thread_ffts,num_threads);
     
     return result;
