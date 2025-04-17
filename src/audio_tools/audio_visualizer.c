@@ -41,18 +41,18 @@ void fast_copy(float *contious_mem,float *mags,bounds2d_t *bounds,const size_t l
 
 
 inline void spectrogram(float *contious_mem, bounds2d_t *bounds, plot_t *settings) {
-    heatmap_t *hm        = NULL;
     const size_t w       = bounds->time.end_d - bounds->time.start_d;
     const size_t h       = bounds->freq.end_d - bounds->freq.start_d;
+
+    heatmap_t *hm        = heatmap_new(w,h);
+    
+    if (!hm) {
+        perror("Failed to allocate heatmap.\n");
+    }
+
     const bool db        = settings->db;
     const size_t tstart  = bounds->time.start_d;
     const size_t tend    = bounds->time.end_d;
-    unsigned char *image = heatmap_get_vars(w, h, &hm);
-
-    if (!image || !hm) {
-        fprintf(stderr, "Failed to allocate heatmap.\n");
-        return;
-    }
 
      
     #pragma omp parallel for schedule(static)
@@ -64,18 +64,21 @@ inline void spectrogram(float *contious_mem, bounds2d_t *bounds, plot_t *setting
         }
     }
 
-    save_heatmap(image, &hm, settings->output_file, w, h, settings->bg_color, settings->cs_enum);
+    save_heatmap(&hm, settings->output_file, w, h, settings->bg_color, settings->cs_enum);
 }
 
 float *mel_spectrogram(float *contious_mem,const size_t num_filters,const size_t num_freq,float *mel_filter_bank, bounds2d_t *bounds, plot_t *settings){
-    
-    heatmap_t *hm        = NULL;
     const size_t w       = bounds->time.end_d - bounds->time.start_d;
     const size_t h       = bounds->freq.end_d - bounds->freq.start_d;
     const bool db        = settings->db;
     const size_t tstart  = bounds->time.start_d;
     const size_t tend    = bounds->time.end_d;
-    unsigned char *image = heatmap_get_vars(w,num_filters,&hm);
+
+    heatmap_t *hm        = heatmap_new(w,h);
+    
+    if (!hm) {
+        perror("Failed to allocate heatmap.\n");
+    }
 
     float *mel_values    = (float*) malloc(num_filters * w * sizeof(float));
 
@@ -94,7 +97,7 @@ float *mel_spectrogram(float *contious_mem,const size_t num_filters,const size_t
     }
 
     
-    save_heatmap(image, &hm, settings->output_file,w,num_filters,settings->bg_color, settings->cs_enum);
+    save_heatmap(&hm, settings->output_file,w,num_filters,settings->bg_color, settings->cs_enum);
 
     return mel_values;
 }
@@ -125,15 +128,18 @@ mffc_t precompute_cosine_coeffs(const size_t num_filters, const size_t num_coff)
 }
 
 inline void mfcc(float *mel_values, mffc_t *dft_coff, bounds2d_t *bounds, plot_t *settings) {
-    heatmap_t *hm            = NULL;
     const bool db            = settings->db;
     const size_t tstart      = bounds->time.start_d;
     const size_t tend        = bounds->time.end_d;
     const size_t w           = tend - tstart;
-
     const size_t num_filters = dft_coff->num_filters;
     const size_t num_coff    = dft_coff->num_coff;
-    unsigned char *image     = heatmap_get_vars(w, num_coff, &hm);
+
+    heatmap_t *hm            = heatmap_new( w, num_coff);
+
+    if (!hm) {
+        perror("Failed to allocate heatmap.\n");
+    }
 
 
     #pragma omp parallel for 
@@ -144,5 +150,5 @@ inline void mfcc(float *mel_values, mffc_t *dft_coff, bounds2d_t *bounds, plot_t
         }
     }
 
-    save_heatmap(image, &hm, settings->output_file, w, num_coff, settings->bg_color, settings->cs_enum);
+    save_heatmap(&hm, settings->output_file, w, num_coff, settings->bg_color, settings->cs_enum);
 }

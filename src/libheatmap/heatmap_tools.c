@@ -1,30 +1,10 @@
 #include "../../headers/libheatmap/heatmap_tools.h"
 
+int save_heatmap(heatmap_t **hm,char *output_file,size_t w,size_t h,unsigned char bg_clr[4],int cs_enum){
 
-unsigned char* heatmap_get_vars(size_t w, size_t h,heatmap_t **hm_out) {
+        
     unsigned char *image = malloc(sizeof(unsigned char) * w * h * 4);
-
-    if (!image) {
-        perror("malloc heatmap");
-        return NULL;
-    }
     
-    memset(image, 0, w * h * 4);
-
-    heatmap_t *hm = heatmap_new(w,h);
-    
-    if (!hm) {
-        fprintf(stderr, "Failed to create heatmap.\n");
-        return NULL;
-    }
-
-    *hm_out = hm;
-
-    return image;
-}
-
-
-int save_heatmap(unsigned char *image,heatmap_t **hm,char *output_file,size_t w,size_t h,unsigned char bg_clr[4],int cs_enum){
 
     if(cs_enum > NUM_CS_MAX-1)
      return -1;
