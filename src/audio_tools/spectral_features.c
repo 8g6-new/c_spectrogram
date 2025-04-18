@@ -1,7 +1,7 @@
 #include "../../headers/audio_tools/spectral_features.h"
 
 #define CALCULATE_MAGNITUDE 1
-#define CALCULATE_PHASE 0
+#define CALCULATE_PHASE 1
 
 inline size_t hz_to_index(size_t num_freq, size_t sample_rate, float f) {
     return (size_t)((num_freq * f) / (sample_rate / 2.0f));
@@ -532,85 +532,54 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
     const size_t num_samples     = audio->num_samples;
 
     size_t max_i = (num_samples >= window_size * channels) ? 
-                    (num_samples - window_size * channels) / (hop_size ) : 0;
+                    (num_samples - window_size * channels) / hop_size : 0;
     max_i = (max_i < output_size) ? max_i : output_size;
 
-    result.output_size           = max_i;
+    result.output_size = max_i;
 
+    // Allocate one FFT context
+    fftwf_complex* in  = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
+    fftwf_complex* out = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
 
+    fftwf_plan plan = fftwf_plan_dft_1d(
+        (int)window_size, 
+        in, 
+        out, 
+        FFTW_FORWARD, 
+        FFTW_WISDOM_ONLY
+    );
 
-    const size_t num_threads = omp_get_max_threads();
-    
-
-    printf("\nNum therads : %zu : ",num_threads);
-     
-    omp_set_num_threads(num_threads);
-
-    fft_d *thread_ffts           = (fft_d*)malloc(num_threads * sizeof(fft_d));
-    
-    if (!thread_ffts) {
-        fprintf(stderr, "Failed to allocate memory for thread FFT plans\n");
-        return result;
+    if (!plan) {
+        plan = fftwf_plan_dft_1d(
+            (int)window_size, 
+            in, 
+            out, 
+            FFTW_FORWARD, 
+            FFTW_ESTIMATE
+        );
     }
-    
-    #pragma omp parallel
-    {
-        int thread_id = omp_get_thread_num();
-        
-        thread_ffts[thread_id].in  = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
-        thread_ffts[thread_id].out = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
-        
-        #pragma omp critical
-        {
-            thread_ffts[thread_id].plan = fftwf_plan_dft_1d(
-                (int)window_size, 
-                thread_ffts[thread_id].in, 
-                thread_ffts[thread_id].out, 
-                FFTW_FORWARD, 
-                FFTW_WISDOM_ONLY 
-            );
-            
-            if (!thread_ffts[thread_id].plan) {
-                thread_ffts[thread_id].plan = fftwf_plan_dft_1d(
-                    (int)window_size, 
-                    thread_ffts[thread_id].in, 
-                    thread_ffts[thread_id].out, 
-                    FFTW_FORWARD, 
-                    FFTW_ESTIMATE  
-                );
+
+    for (size_t i = 0; i < max_i; i++) {
+        const size_t start_idx = i * hop_size;
+
+        for (size_t j = 0; j < window_size; j++) {
+            float sum = 0.0f;
+            for (size_t ch = 0; ch < channels; ch++) {
+                sum += audio->samples[start_idx + (j * channels) + ch];
             }
+            in[j][0] = (sum * window_values[j]) / channels;
+            in[j][1] = 0.0f;
         }
+
+        fftwf_execute(plan);
+
+        const size_t offset = i * num_frequencies;
+        compute_magnitudes_and_phases_scalar(out, result.magnitudes, result.phases, offset, num_frequencies);
     }
 
-     
-    #pragma omp parallel
-    {
-        int thread_id     = omp_get_thread_num();
-        fft_d *thread_fft = &thread_ffts[thread_id];
+    fftwf_destroy_plan(plan);
+    free(in);
+    free(out);
 
-        if (thread_fft->plan) {
-            #pragma omp for simd
-            for (size_t i = 0; i < max_i; i++) {
-                const size_t start_idx = i * hop_size;
-        
-                for (size_t j = 0; j < window_size; j++) {
-                    float sum = 0.0f;
-                    for (size_t ch = 0; ch < channels; ch++) {
-                        sum += audio->samples[start_idx + (j * channels) + ch];
-                    }
-                    thread_fft->in[j][0] = (sum * window_values[j]) / channels;
-                    thread_fft->in[j][1] = 0.0f;
-                }
-        
-                fftwf_execute(thread_fft->plan);
-        
-                const size_t offset = i * num_frequencies;
-                compute_magnitudes_and_phases_scalar(thread_fft->out, result.magnitudes, result.phases, offset, num_frequencies);
-            }
-        }
-    }
-    
-    // cleanup_fft_threads(thread_ffts,num_threads);
-    
     return result;
 }
