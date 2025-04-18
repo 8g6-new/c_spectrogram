@@ -55,7 +55,7 @@ inline void spectrogram(float *contious_mem, bounds2d_t *bounds, plot_t *setting
     const size_t tend    = bounds->time.end_d;
 
      
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for 
     for (size_t t = tstart; t < tend; t++) {
         const size_t offset = (t - tstart) * h;
         for (size_t f = 0; f < h; f++) {
