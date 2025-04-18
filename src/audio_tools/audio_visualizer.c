@@ -5,19 +5,19 @@ inline float  brachless_db(float mag,bool db){
     return !db*mag + db*log10f(1 + mag*mag);
 }
 
-void print_bounds(bounds2d_t *bounds) {
-    printf("Time bounds:\n");
-    printf("  Start (f): %.2f\n", bounds->time.start_f);
-    printf("  End   (f): %.2f\n", bounds->time.end_f);
-    printf("  Start (d): %zu\n", bounds->time.start_d);
-    printf("  End   (d): %zu\n", bounds->time.end_d);
+// void print_bounds(bounds2d_t *bounds) {
+//     printf("Time bounds:\n");
+//     printf("  Start (f): %.2f\n", bounds->time.start_f);
+//     printf("  End   (f): %.2f\n", bounds->time.end_f);
+//     printf("  Start (d): %zu\n", bounds->time.start_d);
+//     printf("  End   (d): %zu\n", bounds->time.end_d);
 
-    printf("Frequency bounds:\n");
-    printf("  Start (f): %.2f\n", bounds->freq.start_f);
-    printf("  End   (f): %.2f\n", bounds->freq.end_f);
-    printf("  Start (d): %zu\n", bounds->freq.start_d);
-    printf("  End   (d): %zu\n", bounds->freq.end_d);
-}
+//     printf("Frequency bounds:\n");
+//     printf("  Start (f): %.2f\n", bounds->freq.start_f);
+//     printf("  End   (f): %.2f\n", bounds->freq.end_f);
+//     printf("  Start (d): %zu\n", bounds->freq.start_d);
+//     printf("  End   (d): %zu\n", bounds->freq.end_d);
+// }
 
 void set_limits(bounds2d_t *bounds,const size_t max_freq,const size_t max_time){
     bounds->time.end_d  = max_time;
