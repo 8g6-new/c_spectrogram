@@ -10,7 +10,6 @@ This repository provides a high-performance C library for audio signal processin
 - **Audio I/O**:
   - Supports WAV (via `libsndfile`) and MP3 (via `minimp3`) formats.
   - Automatic file type detection for seamless input handling.
-  - Memory-efficient processing, using ~2GB for large datasets (vs. Python crashes in Colab).
 
 - **Short-Time Fourier Transform (STFT)**:
   - Computes STFT with FFTW, optimized using wisdom caching for fast FFT planning.
@@ -68,7 +67,7 @@ This repository provides a high-performance C library for audio signal processin
   - BLAS (e.g., OpenBLAS) for matrix operations.
   - libpng for PNG output.
 - **Optional**: OpenCV for additional color scheme support (`opencv_like` build target).
-- **Hardware**: Supports SSE, SSE2, AVX, and AVX2 instructions (AVX512 code available but commented out).
+- **Hardware**: Supports SSE, SSE2, AVX, and AVX2 instructions 
 
 ## Installation
 
@@ -76,10 +75,6 @@ This repository provides a high-performance C library for audio signal processin
    ```bash
    sudo apt-get update
    sudo apt-get install libfftw3-dev libsndfile1-dev libopenblas-dev libpng-dev libomp-dev
-   ```
-   For OpenCV support:
-   ```bash
-   sudo apt-get install libopencv-dev
    ```
 
 2. **Clone the Repository**:
