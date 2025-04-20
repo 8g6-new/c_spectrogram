@@ -56,4 +56,4 @@ By following OpenCV's well-established color palettes, these schemes offer a fam
 | 18 | TWILIGHT | ![Twilight](images/black_woodpecker_stft_Twilight.png "Twilight Spectrogram") |
 | 19 | TWILIGHT_SHIFTED | ![Twilight Shifted](images/black_woodpecker_stft_Twilight_Shifted.png "Twilight Shifted Spectrogram") |
 | 20 | TURBO | ![Turbo](images/black_woodpecker_stft_Turbo.png "Turbo Spectrogram") |
-| 21 | DEEP_GREEN | ![Deep Green](images/black_woodpecker_stft_Deep Green.png "Deep Green Spectrogram") |
+| 21 | DEEP_GREEN | ![Deep Green](images/black_woodpecker_stft_Deep_Green.png "Deep Green Spectrogram") |
