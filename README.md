@@ -342,9 +342,10 @@ The `Makefile` provides flexible build targets with aggressive optimizations:
 - **Real-Time Processing**: Extend the pipeline for streaming audio analysis.
 - **Machine Learning Integration**: Feed MFCCs into ML models for tasks like bird call classification.
 - **Enhanced Benchmarking**: Add memory usage and CPU/GPU utilization metrics to `bench.h`.
-- **Simple haetmap for faster ploting** :Replace the `libheatmap` `heatmap_add_weighted_point()` call used on every loop iteration, as it was identified as a significant bottleneck in image plotting. A custom, simplified heatmap generator will be implemented for faster rendering.
+- **Simple Heatmap for Faster Plotting**: Replace the `libheatmap` `heatmap_add_weighted_point()` call used on every loop iteration, as it was identified as a significant bottleneck in image plotting. A custom, simplified heatmap generator will be implemented for faster rendering.
+- **Memory Pooling and Allocation**: Implement memory pooling using a memory arena to improve memory utilization, prevent issues like use-after-free, and enhance overall memory management.
+- **Advanced Memory Management**: Investigate and integrate state-of-the-art buddy allocators or other advanced memory management techniques to optimize memory allocation, reduce fragmentation, and improve performance in resource-constrained environments.
 - **Documentation**: Add detailed API docs and usage examples to `headers/` and `README.md`.
-
 
 
 ## Acknowledgments
