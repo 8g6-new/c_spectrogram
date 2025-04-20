@@ -229,7 +229,7 @@ Below are sample visualizations generated from `black_woodpecker.wav`, showcasin
   ![STFT Jet](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Jet.png)
 
 ### Mel Spectrogram and MFCC
-- **Mel Spectrogram (Blues Soft)**: Visualizes Mel filter bank output.
+- **Mel Spectrogram (Cividis)**: Visualizes Mel filter bank output.
   ![Mel Spectrogram](outputs/functions/black_woodpecke_mel.png)
 - **MFCC (Blues Soft)**: Displays cepstral coefficients for feature extraction.
   ![MFCC](outputs/functions/black_woodpecke_mfcc.png)
