@@ -212,11 +212,43 @@ int main() {
 }
 ```
 
-### Output Directory Structure
+## Sample Visualizations
+
+Below are sample visualizations generated from `black_woodpecker.wav`, showcasing STFT spectrograms, Mel spectrograms, and MFCC heatmaps with various color schemes. These examples use the `builtin` and `opencv_like` builds.
+
+### STFT Spectrograms (Built-in Color Schemes)
+- **Blues (Soft)**: Smooth gradient for clear frequency visualization.
+  ![STFT Blues Soft](outputs/colorschemes/libheatmap_defaults/soft/black_woodpecker_stft_Blues_soft.png)
+- **Spectral (Discrete)**: High-contrast for distinct frequency bands.
+  ![STFT Spectral Discrete](outputs/colorschemes/libheatmap_defaults/discrete/black_woodpecker_stft_Spectral_discrete.png)
+
+### STFT Spectrograms (OpenCV-like Color Schemes)
+- **Viridis**: Popular for scientific visualization, emphasizing frequency dynamics.
+  ![STFT Viridis](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Viridis.png)
+- **Jet**: Classic colormap for highlighting intensity variations.
+  ![STFT Jet](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Jet.png)
+
+### Mel Spectrogram and MFCC
+- **Mel Spectrogram (Blues Soft)**: Visualizes Mel filter bank output.
+  ![Mel Spectrogram](outputs/functions/black_woodpecker_mel.png)
+- **MFCC (Blues Soft)**: Displays cepstral coefficients for feature extraction.
+  ![MFCC](outputs/functions/black_woodpecker_mfcc.png)
+
+To explore all available color schemes (e.g., Blues, Viridis, Jet, Inferno in discrete, mixed, mixed_exp, and soft variants), refer to the `README.MD` files in:
+- [`outputs/colorschemes/libheatmap_defaults/README.MD`](./outputs/colorschemes/libheatmap_defaults/README.MD) for built-in color schemes.
+- [`outputs/colorschemes/opencv_like/README.MD`](./outputs/colorschemes/opencv_like/README.MD) for OpenCV-like color schemes.
+
+These files include comprehensive galleries of all color schemes applied to `black_woodpecker.wav`.
+
+## Output Directory Structure
 The `outputs` directory contains:
-- `colorschemes/libheatmap_defaults`: STFT spectrograms with built-in color schemes (e.g., `Blues`, `Viridis`) in discrete, mixed, and soft variants.
-- `colorschemes/opencv_like`: OpenCV-inspired color schemes (e.g., `Jet`, `Inferno`) for `opencv_like` builds.
-- `functions`: Mel spectrograms and MFCC heatmaps (e.g., `black_woodpecker_mel.png`).
+- `colorschemes/libheatmap_defaults`: STFT spectrograms with built-in color schemes in:
+  - `discrete`: High-contrast, distinct color steps (e.g., `black_woodpecker_stft_Blues_discrete.png`).
+  - `mixed`: Smooth transitions between colors (e.g., `black_woodpecker_stft_Blues_mixed.png`).
+  - `mixed_exp`: Exponentially scaled mixed colors (e.g., `black_woodpecker_stft_Blues_mixed_exp.png`).
+  - `soft`: Softened gradients for aesthetic visualization (e.g., `black_woodpecker_stft_Blues_soft.png`).
+- `colorschemes/opencv_like/images`: STFT spectrograms with OpenCV-inspired color schemes (e.g., `black_woodpecker_stft_Viridis.png`, `black_woodpecker_stft_Jet.png`).
+- `functions`: Mel spectrograms and MFCC heatmaps (e.g., `black_woodpecker_mel.png`, `black_woodpecker_mfcc.png`).
 
 ### Benchmarking Output
 The `print_bench_ranked` function produces a ranked table of function execution times, including:
