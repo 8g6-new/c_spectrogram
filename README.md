@@ -340,7 +340,6 @@ The `Makefile` provides flexible build targets with aggressive optimizations:
 - **GPU Acceleration**: Implement CUDA-based STFT (cuFFT), Mel spectrograms (cuBLAS), and visualization to match or exceed Librosa’s performance.
 - **Sparse Matrix Operations**: Optimize Mel filter bank with sparse matrix formats (e.g., CSR) to reduce memory and computation.
 - **Real-Time Processing**: Extend the pipeline for streaming audio analysis.
-- **Machine Learning Integration**: Feed MFCCs into ML models for tasks like bird call classification.
 - **Enhanced Benchmarking**: Add memory usage and CPU/GPU utilization metrics to `bench.h`.
 - **Simple Heatmap for Faster Plotting**: Replace the `libheatmap` `heatmap_add_weighted_point()` call used on every loop iteration, as it was identified as a significant bottleneck in image plotting. A custom, simplified heatmap generator will be implemented for faster rendering.
 - **Memory Pooling and Allocation**: Implement memory pooling using a memory arena to improve memory utilization, prevent issues like use-after-free, and enhance overall memory management.
