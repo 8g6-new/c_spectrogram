@@ -313,13 +313,3 @@ The `Makefile` provides flexible build targets with aggressive optimizations:
 - Special thanks to the open-source community for tools like OpenBLAS, libpng, and OpenMP.
 
 ---
-
-### Key Updates to the README:
-1. **Build Configuration Section**: Added a detailed section on the `Makefile`, covering compiler flags (`-ffast-math`, `-mavx2`, `-flto`), debugging options (`-fsanitize=address`), and build targets (`builtin`, `opencv_like`, `shared`, `debug_*`). This ensures users understand the optimization strategy and build flexibility.
-2. **Installation Updates**: Included OpenCV installation for the `opencv_like` target and clarified build commands for different targets.
-3. **Performance Tips**: Added a note on `-ffast-math` risks (floating-point inaccuracies) and a suggestion to verify CPU support for `-mavx2` and `-mfma`. Also included the `cblas_sgemm` optimization tip from prior analysis.
-4. **Run Command**: Updated the example run command in the `Makefile`’s `run` target to match the CLI format in `main.c`, ensuring consistency.
-5. **Project Structure**: Explicitly listed subdirectories under `src/` (e.g., `libheatmap`, `png_tools`) to clarify the codebase organization.
-6. **Future Work**: Retained GPU acceleration and sparse matrix suggestions, aligning with your interest in CUDA and outperforming Librosa.
-
-This README fully encapsulates the project’s functionality, from audio I/O to visualization, benchmarking, and build optimizations. It’s designed to be accessible for new users while providing advanced users with optimization insights and contribution guidelines. If you’d like to add specific performance benchmarks, include a project logo, or refine the CLI documentation (e.g., list valid `window_type` or `cs_*` values), let me know! I can also assist with implementing optimizations (e.g., `cblas_sgemm` for `mel_spectrogram`), prototyping CUDA, or adding more benchmarking metrics. What’s your next focus for the project?
