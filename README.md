@@ -1,6 +1,6 @@
 # c_spectrogram : Audio Signal Processing and Visualization
 
-<a href="https://wakatime.com/badge/user/018c3e96-0fae-432d-add6-28d53961f8b4/project/54fb69e3-a9fa-4548-b5ef-6494425e2ffb"><img src="https://wakatime.com/badge/user/018c3e96-0fae-432d-add6-28d53961f8b4/project/54fb69e3-a9fa-4548-b5ef-6494425e2ffb.svg" alt="wakatime"></a>
+![<a href="https://wakatime.com/badge/user/018c3e96-0fae-432d-add6-28d53961f8b4/project/54fb69e3-a9fa-4548-b5ef-6494425e2ffb"><img src="https://wakatime.com/badge/user/018c3e96-0fae-432d-add6-28d53961f8b4/project/54fb69e3-a9fa-4548-b5ef-6494425e2ffb.svg" alt="wakatime"></a>](https://wakatime.com/badge/user/b22f0d5c-6b9c-4f1c-b03e-aded2821b835/project/27421cd6-5e4c-4ba6-ac96-d5c9e87e7a6b.svg)
 
 
 This repository provides a high-performance C library for audio signal processing and visualization, featuring Short-Time Fourier Transform (STFT), Mel spectrograms, Mel-Frequency Cepstral Coefficients (MFCC), and heatmap visualizations. Designed for large-scale audio datasets, it leverages optimizations like SIMD (SSE, SSE2, AVX, AVX2), FFTW with wisdom caching, OpenMP parallelization, and BLAS for fast matrix operations. The library supports WAV and MP3 inputs, produces professional-grade visualizations with customizable color schemes, and includes robust benchmarking tools for performance analysis.
