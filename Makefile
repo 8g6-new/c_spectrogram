@@ -48,9 +48,6 @@ DBGFLAGS+=-fsanitize=undefined#     => Enables Undefined Behavior Sanitizer (UBS
 LIBFLAGS = -DMINIMP3_FLOAT_OUTPUT
 WARNFLAGS = -Wall -Wextra 
 
-OPTFLAGS = -ffast-math -march=native -mtune=native -funroll-loops -fpeel-loops -ftracer -flto -fuse-linker-plugin -floop-block -floop-interchange -floop-unroll-and-jam -fipa-pta -fipa-cp -fipa-sra -fipa-icf
-VECFLAGS = -ftree-vectorize -ftree-loop-vectorize -fopt-info-vec-optimized -mavx -msse4.2 -mavx2 -mfma -mf16c -mabm -mf16c
-
 CFLAGS = $(WARNFLAGS) $(OPTFLAGS) $(VECFLAGS) $(LIBFLAGS)
 CFLAGS_DEBUG = -g -O0 -DDEBUG
 LDFLAGS = -lm -lfftw3 -lfftw3f -lsndfile -lpng -fopenmp -lopenblas 

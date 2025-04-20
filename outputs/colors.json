@@ -1,0 +1,190 @@
+{   "opencv_like":{
+      "AUTUMN": "0",
+      "BONE": "1",
+      "JET": "2",
+      "WINTER": "3",
+      "RAINBOW": "4",
+      "OCEAN": "5",
+      "SUMMER": "6",
+      "SPRING": "7",
+      "COOL": "8",
+      "HSV": "9",
+      "PINK": "10",
+      "HOT": "11",
+      "PARULA": "12",
+      "MAGMA": "13",
+      "INFERNO": "14",
+      "PLASMA": "15",
+      "VIRIDIS": "16",
+      "CIVIDIS": "17",
+      "TWILIGHT": "18",
+      "TWILIGHT_SHIFTED": "19",
+      "TURBO": "20",
+      "DEEP_GREEN": "21"
+  },
+  
+    "builtin": {
+        "PRGn": {
+            "discrete": 0,
+            "soft": 1,
+            "mixed": 2,
+            "mixed_exp": 3
+        },
+        "Blues": {
+            "discrete": 4,
+            "soft": 5,
+            "mixed": 6,
+            "mixed_exp": 7
+        },
+        "BrBG": {
+            "discrete": 8,
+            "soft": 9,
+            "mixed": 10,
+            "mixed_exp": 11
+        },
+        "BuGn": {
+            "discrete": 12,
+            "soft": 13,
+            "mixed": 14,
+            "mixed_exp": 15
+        },
+        "BuPu": {
+            "discrete": 16,
+            "soft": 17,
+            "mixed": 18,
+            "mixed_exp": 19
+        },
+        "GnBu": {
+            "discrete": 20,
+            "soft": 21,
+            "mixed": 22,
+            "mixed_exp": 23
+        },
+        "Greens": {
+            "discrete": 24,
+            "soft": 25,
+            "mixed": 26,
+            "mixed_exp": 27
+        },
+        "Greys": {
+            "discrete": 28,
+            "soft": 29,
+            "mixed": 30,
+            "mixed_exp": 31
+        },
+        "Oranges": {
+            "discrete": 32,
+            "soft": 33,
+            "mixed": 34,
+            "mixed_exp": 35
+        },
+        "OrRd": {
+            "discrete": 36,
+            "soft": 37,
+            "mixed": 38,
+            "mixed_exp": 39
+        },
+        "PiYG": {
+            "discrete": 40,
+            "soft": 41,
+            "mixed": 42,
+            "mixed_exp": 43
+        },
+        "PuBu": {
+            "discrete": 44,
+            "soft": 45,
+            "mixed": 46,
+            "mixed_exp": 47
+        },
+        "PuBuGn": {
+            "discrete": 48,
+            "soft": 49,
+            "mixed": 50,
+            "mixed_exp": 51
+        },
+        "PuOr": {
+            "discrete": 52,
+            "soft": 53,
+            "mixed": 54,
+            "mixed_exp": 55
+        },
+        "PuRd": {
+            "discrete": 56,
+            "soft": 57,
+            "mixed": 58,
+            "mixed_exp": 59
+        },
+        "Purples": {
+            "discrete": 60,
+            "soft": 61,
+            "mixed": 62,
+            "mixed_exp": 63
+        },
+        "RdBu": {
+            "discrete": 64,
+            "soft": 65,
+            "mixed": 66,
+            "mixed_exp": 67
+        },
+        "RdGy": {
+            "discrete": 68,
+            "soft": 69,
+            "mixed": 70,
+            "mixed_exp": 71
+        },
+        "RdPu": {
+            "discrete": 72,
+            "soft": 73,
+            "mixed": 74,
+            "mixed_exp": 75
+        },
+        "RdYlBu": {
+            "discrete": 76,
+            "soft": 77,
+            "mixed": 78,
+            "mixed_exp": 79
+        },
+        "RdYlGn": {
+            "discrete": 80,
+            "soft": 81,
+            "mixed": 82,
+            "mixed_exp": 83
+        },
+        "Reds": {
+            "discrete": 84,
+            "soft": 85,
+            "mixed": 86,
+            "mixed_exp": 87
+        },
+        "Spectral": {
+            "discrete": 88,
+            "soft": 89,
+            "mixed": 90,
+            "mixed_exp": 91
+        },
+        "YlGn": {
+            "discrete": 92,
+            "soft": 93,
+            "mixed": 94,
+            "mixed_exp": 95
+        },
+        "YlGnBu": {
+            "discrete": 96,
+            "soft": 97,
+            "mixed": 98,
+            "mixed_exp": 99
+        },
+        "YlOrBr": {
+            "discrete": 100,
+            "soft": 101,
+            "mixed": 102,
+            "mixed_exp": 103
+        },
+        "YlOrRd": {
+            "discrete": 104,
+            "soft": 105,
+            "mixed": 106,
+            "mixed_exp": 107
+        }
+    }
+}
