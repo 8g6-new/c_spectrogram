@@ -1,4 +1,3 @@
-```markdown
 # 🎨 Colormap Enum Reference
 
 This document lists all supported colormaps along with their internal enum IDs as defined in `output/colors.json`.
@@ -67,5 +66,4 @@ Each colormap has four variants: `discrete`, `soft`, `mixed`, and `mixed_exp`.
 | YlGnBu     | 96       | 97   | 98    | 99        |
 | YlOrBr     | 100      | 101  | 102   | 103       |
 | YlOrRd     | 104      | 105  | 106   | 107       |
-```
 
