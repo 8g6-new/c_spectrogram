@@ -240,6 +240,21 @@ To explore all available color schemes (e.g., Blues, Viridis, Jet, Inferno in di
 
 These files include comprehensive galleries of all color schemes applied to `black_woodpecker.wav`.
 
+## 🎨 Colormap Enum Reference
+All supported colormaps are listed in the file:
+
+```bash
+output/colors.json
+```
+This file maps human-readable names to internal enum IDs for both:
+
+OpenCV-like colormaps (e.g., JET, VIRIDIS, HOT)
+
+Built-in scientific colormaps (e.g., Blues.soft, Spectral.mixed_exp)
+
+Refer [`outputs/README.MD`](./outputs/README.MD)
+
+
 ## Output Directory Structure
 The `outputs` directory contains:
 - `colorschemes/libheatmap_defaults`: STFT spectrograms with built-in color schemes in:
