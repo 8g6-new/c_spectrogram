@@ -27,7 +27,7 @@ This repository provides a high-performance C library for audio signal processin
   - Visualizes MFCCs as heatmaps with customizable color schemes.
 
 - **Visualization**:
-  - Renders spectrograms, Mel spectrograms, and MFCCs as PNG heatmaps using a custom `libheatmap` module.
+  - Renders spectrograms, Mel spectrograms, and MFCCs as PNG heatmaps using a [libheatmap](https://github.com/lucasb-eyer/libheatmap).
   - Supports extensive color schemes (e.g., Blues, Viridis, Jet, Inferno) in discrete, mixed, and soft variants, with built-in and OpenCV-like options.
   - Configurable time/frequency bounds for focused visualizations.
   - Optimized memory copying for cache-friendly visualization.
@@ -342,14 +342,20 @@ The `Makefile` provides flexible build targets with aggressive optimizations:
 - **Real-Time Processing**: Extend the pipeline for streaming audio analysis.
 - **Machine Learning Integration**: Feed MFCCs into ML models for tasks like bird call classification.
 - **Enhanced Benchmarking**: Add memory usage and CPU/GPU utilization metrics to `bench.h`.
+- **Simple haetmap for faster ploting** :Replace the `libheatmap` `heatmap_add_weighted_point()` call used on every loop iteration, as it was identified as a significant bottleneck in image plotting. A custom, simplified heatmap generator will be implemented for faster rendering.
 - **Documentation**: Add detailed API docs and usage examples to `headers/` and `README.md`.
 
 
 
 ## Acknowledgments
 
-- Built with inspiration from Librosa, aiming for high-performance audio processing in C.
-- Tested on bioacoustics datasets (e.g., bird calls), with thanks to open-source audio libraries like FFTW and libsndfile.
-- Special thanks to the open-source community for tools like OpenBLAS, libpng, and OpenMP.
+- Built with inspiration from [Librosa](https://librosa.org/), aiming for high-performance audio processing in C.
 
----
+- Tested on bioacoustics datasets (e.g., bird calls), with thanks to open-source audio libraries like [FFTW](http://www.fftw.org/) and [libsndfile](http://www.mega-nerd.com/libsndfile/).
+
+- Special thanks to the open-source community for tools like [OpenBLAS](https://www.openblas.net/), [libpng](http://www.libpng.org/pub/png/libpng.html), and [OpenMP](https://www.openmp.org/).
+
+- Gratitude to [lucasb-eyer/libheatmap](https://github.com/lucasb-eyer/libheatmap) for the heatmap visualization module used in this project.
+
+- Credit to [lieff/minimp3](https://github.com/lieff/minimp3) for the lightweight MP3 decoding library.
+
