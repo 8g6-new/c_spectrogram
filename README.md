@@ -230,9 +230,9 @@ Below are sample visualizations generated from `black_woodpecker.wav`, showcasin
 
 ### Mel Spectrogram and MFCC
 - **Mel Spectrogram (Blues Soft)**: Visualizes Mel filter bank output.
-  ![Mel Spectrogram](outputs/functions/black_woodpecker_mel.png)
+  ![Mel Spectrogram](outputs/functions/black_woodpecke_mel.png)
 - **MFCC (Blues Soft)**: Displays cepstral coefficients for feature extraction.
-  ![MFCC](outputs/functions/black_woodpecker_mfcc.png)
+  ![MFCC](outputs/functions/black_woodpecke_mfcc.png)
 
 To explore all available color schemes (e.g., Blues, Viridis, Jet, Inferno in discrete, mixed, mixed_exp, and soft variants), refer to the `README.MD` files in:
 - [`outputs/colorschemes/libheatmap_defaults/README.MD`](./outputs/colorschemes/libheatmap_defaults/README.MD) for built-in color schemes.
