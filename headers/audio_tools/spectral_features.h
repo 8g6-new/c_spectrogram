@@ -38,7 +38,8 @@
         size_t size;
         const size_t num_filters;
     } melbank_t;
-
+   
+    
 
     bool            init_fft_output(stft_d *result, unsigned int window_size, unsigned int hop_size, unsigned int num_samples);
     void            print_melbank(const melbank_t *v);
@@ -51,6 +52,7 @@
     void            window_function(float *window_values, size_t window_size, const char *window_type);
     const melbank_t mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_t fft_size, float *filter);
     size_t          hz_to_index(size_t num_freq, size_t sample_rate, float f);
+    size_t          align32(size_t size);
     double          hz_to_mel(double f, float mid_f);
     double          mel_to_hz(double m, float mid_f);
     float           safe_diff(size_t a, size_t b);

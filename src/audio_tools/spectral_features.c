@@ -7,6 +7,10 @@ inline size_t hz_to_index(size_t num_freq, size_t sample_rate, float f) {
     return (size_t)((num_freq * f) / (sample_rate / 2.0f));
 }
 
+inline size_t align32(size_t size) {
+    return (size + 31) & ~((size_t)31);
+}
+
 static inline void compute_magnitudes_and_phases_scalar(fftwf_complex *out, float *magnitudes, float *phases, const size_t offset, const size_t count) {
     for (size_t j = 0; j < count; j++) {
         const float real = out[j][0];
@@ -319,9 +323,9 @@ inline bool init_fft_output(stft_d *result, unsigned int window_size, unsigned i
     size_t phases_size      = result->num_frequencies * result->output_size * sizeof(float);
     size_t phasers_size     = result->num_frequencies * 2 * result->output_size * sizeof(float);
 
-    result->magnitudes      = (float*)aligned_alloc(32, magnitudes_size);
-    result->phases          = (float*)aligned_alloc(32, phases_size);
-    result->phasers         = (float*)aligned_alloc(32, phasers_size);
+    result->magnitudes      = (float*)aligned_alloc(32, align32(magnitudes_size));
+    result->phases          = (float*)aligned_alloc(32, align32(phases_size));
+    result->phasers         = (float*)aligned_alloc(32, align32(phasers_size));
 
 
     return true;
@@ -355,9 +359,9 @@ melbank_t mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_
 
     melbank_t non_zero      = { .freq_indexs = NULL, .weights = NULL, .size = 0 ,.num_filters=n_filters };
    
-    const size_t avg_length = n_filters * 5;
-    non_zero.freq_indexs    = malloc( avg_length * sizeof(size_t));
-    non_zero.weights        = malloc( avg_length * sizeof(float));
+    const size_t avg_length = n_filters * (fft_size * (fft_size*5)/512);
+    non_zero.freq_indexs    = malloc(avg_length * sizeof(size_t));
+    non_zero.weights        = malloc(avg_length * sizeof(float));
     
     size_t num_f            = (fft_size / 2);
     float mel_mid           = 2595.0f;
@@ -510,7 +514,7 @@ inline fft_d init_fftw_plan(const size_t window_size, const char *cache_dir) {
 }
 
 
-//fftwf : 32bit vs fftw 64bit vs fftwq:  128bit
+
 inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float *window_values, fft_d *master_fft) {
     if (!audio || !window_values || !master_fft || !master_fft->plan) {
         stft_d error_result = {0};
@@ -538,8 +542,8 @@ inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float
     result.output_size = max_i;
 
     // Allocate one FFT context
-    fftwf_complex* in  = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
-    fftwf_complex* out = (fftwf_complex*)aligned_alloc(32, window_size * sizeof(fftwf_complex));
+    fftwf_complex* in  = (fftwf_complex*)aligned_alloc(32, align32(window_size * sizeof(fftwf_complex)));
+    fftwf_complex* out = (fftwf_complex*)aligned_alloc(32, align32(window_size * sizeof(fftwf_complex)));
 
     fftwf_plan plan = fftwf_plan_dft_1d(
         (int)window_size, 
