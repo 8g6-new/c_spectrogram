@@ -346,6 +346,17 @@ The `Makefile` provides flexible build targets with aggressive optimizations:
 - **Advanced Memory Management**: Investigate and integrate state-of-the-art buddy allocators or other advanced memory management techniques to optimize memory allocation, reduce fragmentation, and improve performance in resource-constrained environments.
 - **Documentation**: Add detailed API docs and usage examples to `headers/` and `README.md`.
 
+## 📄 License
+
+This repository is dual-licensed:
+
+- **Code** :  
+  Licensed under the [MIT License](./LICENSE).  
+  You are free to use, modify, and distribute the code, including for commercial purposes, with proper attribution.
+
+
+Credit this work if you use it in your research or application.
+
 
 ## Acknowledgments
 
