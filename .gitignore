@@ -1,7 +1,7 @@
 build
 .last_target
 cache
-
+.wisdom
 
 !/outputs/*
 !/tests
