@@ -348,7 +348,6 @@ The `Makefile` provides flexible build targets with aggressive optimizations:
 
 ## 📄 License
 
-This repository is dual-licensed:
 
 - **Code** :  
   Licensed under the [MIT License](./LICENSE).  
