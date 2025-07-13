@@ -1,5 +1,7 @@
 #include "../../headers/audio_tools/audio_visualizer.h"
 
+
+
 /*
  * The MIT License (MIT)
  * 
@@ -65,13 +67,15 @@ void fast_copy(float *contious_mem,float *mags,bounds2d_t *bounds,const size_t l
 
 
 inline void spectrogram(float *contious_mem, bounds2d_t *bounds, plot_t *settings) {
+
+    
     const size_t w       = bounds->time.end_d - bounds->time.start_d;
     const size_t h       = bounds->freq.end_d - bounds->freq.start_d;
 
     heatmap_t *hm        = heatmap_new(w,h);
     
     if (!hm) {
-        perror("Failed to allocate heatmap.\n");
+        fprintf(stderr, "Failed to allocate heatmap.\n");
     }
 
     const bool db        = settings->db;
@@ -92,21 +96,25 @@ inline void spectrogram(float *contious_mem, bounds2d_t *bounds, plot_t *setting
 }
 
 float *mel_spectrogram(float *contious_mem,const size_t num_filters,const size_t num_freq,float *mel_filter_bank, bounds2d_t *bounds, plot_t *settings){
+
+
+    omp_set_num_threads(omp_get_max_threads());
+
     const size_t w       = bounds->time.end_d - bounds->time.start_d;
     const size_t h       = bounds->freq.end_d - bounds->freq.start_d;
     const bool db        = settings->db;
     const size_t tstart  = bounds->time.start_d;
     const size_t tend    = bounds->time.end_d;
 
-    heatmap_t *hm        = heatmap_new(w,h);
+    heatmap_t *hm        = heatmap_new(w,num_filters);
     
     if (!hm) {
-        perror("Failed to allocate heatmap.\n");
+        fprintf(stderr, "Failed to allocate heatmap.\n");
     }
 
     float *mel_values    = (float*) malloc(num_filters * w * sizeof(float));
 
-    #pragma omp parallel for 
+    #pragma omp parallel for she
     for (size_t t = tstart; t < tend; t++) {
         const size_t offset1 = (t - tstart) * h;
         const size_t offset3 = t * num_filters;
@@ -117,14 +125,16 @@ float *mel_spectrogram(float *contious_mem,const size_t num_filters,const size_t
             sum                       = brachless_db(sum,db);
             mel_values[offset3 + mel] = sum;
             heatmap_add_weighted_point(hm, t - tstart, num_filters - mel, sum);
+          
         }
     }
 
     
     save_heatmap(&hm, settings->output_file,w,num_filters,settings->bg_color, settings->cs_enum);
-
+   
     return mel_values;
 }
+
 
 
 mffc_t precompute_cosine_coeffs(const size_t num_filters, const size_t num_coff) {
@@ -162,7 +172,7 @@ inline void mfcc(float *mel_values, mffc_t *dft_coff, bounds2d_t *bounds, plot_t
     heatmap_t *hm            = heatmap_new( w, num_coff);
 
     if (!hm) {
-        perror("Failed to allocate heatmap.\n");
+        fprintf(stderr, "Failed to allocate heatmap.\n");
     }
 
 

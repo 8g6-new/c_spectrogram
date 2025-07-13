@@ -1,3 +1,4 @@
+
 #include "../../headers/audio_tools/spectral_features.h"
 
 /*
@@ -24,11 +25,40 @@
  * SOFTWARE.
  */
 
-#define CALCULATE_MAGNITUDE 1
-#define CALCULATE_PHASE 1
+ 
 
 
-inline void free_fft(fft_d *fft) {
+inline size_t hz_to_index(size_t num_freq, size_t sample_rate, float f) {
+    return (size_t)((num_freq * f * 2) / sample_rate);
+}
+
+bool is_power_of_two(size_t x) {
+    return x && ((x & (x - 1)) == 0);
+}
+
+void *aligned_alloc_batch(size_t batch, size_t count, bool zero_init) {
+    if (!is_power_of_two(batch)) {
+        fprintf(stderr, "Error: alignment (%zu) must be a power of two.\n", batch);
+        return NULL;
+    }
+
+    size_t total_size = ((count + batch - 1) / batch) * batch;
+    void *ptr         = aligned_alloc(batch, total_size);
+
+    if (!ptr) {
+        fprintf(stderr, "Error: aligned_alloc failed for size %zu with alignment %zu.\n", total_size, batch);
+        return NULL;
+    }
+
+    if (zero_init) {
+        memset(ptr, 0, total_size);
+    }
+
+    return ptr;
+}
+
+
+void free_fft_plan(fft_d *fft) {
     if (fft) {
         if (fft->plan!=NULL) {
             fftwf_destroy_plan(fft->plan);
@@ -47,47 +77,44 @@ inline void free_fft(fft_d *fft) {
 
 
 
-void cleanup_fft_threads(fft_d *thread_ffts, const size_t num_threads) {
-    if (!thread_ffts) return;
+// void cleanup_fft_threads(fft_d *thread_ffts, const size_t num_threads) {
+//     if (!thread_ffts) return;
 
-    for (size_t i = 0; i < num_threads; i++) {
-        free_fft(&thread_ffts[i]);
-    }
+//     for (size_t i = 0; i < num_threads; i++) {
+//         free_fft_plan(&thread_ffts[i]);
+//     }
 
-    free(thread_ffts);
-    thread_ffts = NULL;
-}
+//     free(thread_ffts);
+//     thread_ffts = NULL;
+// }
 
 void free_stft(stft_d *result) {
     if (result) {
         free(result->phasers);
         free(result->magnitudes);
-        free(result->phases);
         free(result->frequencies);
         result->phasers = NULL;
         result->magnitudes = NULL;
-        result->phases = NULL;
         result->frequencies = NULL;
     }
 }
 
 
-inline bool init_fft_output(stft_d *result, unsigned int window_size, unsigned int hop_size, unsigned int num_samples) {
+bool init_fft_output(stft_d *result, unsigned int window_size, unsigned int hop_size, unsigned int num_samples) {
 
-    if(hop_size<=0)
-      perror("Hop size should be >= 0");
+    if(hop_size==0)
+    fprintf(stderr, "Hop size should be >= 0");
 
-    if(window_size<=0)
-      perror("Hop size should be >= 0");
+    if(window_size==0)
+    fprintf(stderr, "window_size >= 0");
 
     if (!result) return false;
 
     result->phasers         = NULL;
     result->magnitudes      = NULL;
-    result->phases          = NULL;
     result->frequencies     = NULL;
 
-    result->fft_times       = 0.0;
+
     result->num_frequencies = (size_t)(window_size / 2);
     result->output_size     = (size_t)(num_samples / hop_size);
 
@@ -95,10 +122,8 @@ inline bool init_fft_output(stft_d *result, unsigned int window_size, unsigned i
     size_t phases_size      = result->num_frequencies * result->output_size * sizeof(float);
     size_t phasers_size     = result->num_frequencies * 2 * result->output_size * sizeof(float);
 
-    result->magnitudes      = (float*)aligned_alloc(32, align32(magnitudes_size));
-    result->phases          = (float*)aligned_alloc(32, align32(phases_size));
-    result->phasers         = (float*)aligned_alloc(32, align32(phasers_size));
-
+    result->magnitudes      = (float*)aligned_alloc_batch(32,magnitudes_size,false);
+    result->phasers         = (float*)aligned_alloc_batch(32,phasers_size,false);
 
     return true;
 }
@@ -123,17 +148,16 @@ void print_melbank(const melbank_t *v) {
         printf("Index %zu -> x: %zu, Weight: %.6f\n",i, v->freq_indexs[i],v->weights[i]);
 }
 
-float safe_div(float a,float b){
-    return b==0 ? 0.0f : a/b;
-}
 
 melbank_t mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_t fft_size, float *filter) {
 
     melbank_t non_zero      = { .freq_indexs = NULL, .weights = NULL, .size = 0 ,.num_filters=n_filters };
    
-    const size_t avg_length = n_filters * (fft_size * (fft_size*5)/512);
-    non_zero.freq_indexs    = malloc(avg_length * sizeof(size_t));
-    non_zero.weights        = malloc(avg_length * sizeof(float));
+    const size_t avg_length = n_filters * (fft_size*3/512);
+    non_zero.freq_indexs    = malloc( avg_length * sizeof(size_t));
+    non_zero.weights        = malloc( avg_length * sizeof(float));
+
+
     
     size_t num_f            = (fft_size / 2);
     float mel_mid           = 2595.0f;
@@ -285,77 +309,70 @@ inline fft_d init_fftw_plan(const size_t window_size, const char *cache_dir) {
     return fft;
 }
 
+stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float *window_values, fft_d *master_fft) {
 
 
-inline stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float *window_values, fft_d *master_fft) {
+    omp_set_num_threads(omp_get_max_threads());
+
     if (!audio || !window_values || !master_fft || !master_fft->plan) {
         stft_d error_result = {0};
+        fprintf(stderr, "FFT Plan not found");
         return error_result;
     }
 
-    stft_d result                = {0};
-    result.sample_rate           = audio->sample_rate;
+    stft_d result = {0};
+    result.sample_rate = audio->sample_rate;
+
 
     init_fft_output(&result, window_size, hop_size, audio->num_samples);
     calculate_frequencies(&result, window_size, audio->sample_rate);
-    
-    audio->channels              = (audio->channels != 0) ? audio->channels : 1;
-    result.output_size          /= audio->channels;
-    
-    const size_t channels        = audio->channels;
-    const size_t output_size     = result.output_size;
-    const size_t num_frequencies = result.num_frequencies;
-    const size_t num_samples     = audio->num_samples;
 
-    size_t max_i = (num_samples >= window_size * channels) ? 
-                    (num_samples - window_size * channels) / hop_size : 0;
-    max_i = (max_i < output_size) ? max_i : output_size;
+    audio->channels          = (audio->channels != 0) ? audio->channels : 1;
+    const size_t channels    = audio->channels;
+    const size_t length      = audio->num_samples/channels;
+    const size_t output_size = (length - window_size) / hop_size + 1;
+    result.output_size       = output_size;
 
-    result.output_size = max_i;
+    fftwf_complex *in       = master_fft->in;
+    fftwf_complex *out      = master_fft->out;
+    fftwf_plan plan         = master_fft->plan;
 
-    // Allocate one FFT context (openmp multitreading compatible)
-    fftwf_complex* in  = (fftwf_complex*)aligned_alloc(32, align32(window_size * sizeof(fftwf_complex)));
-    fftwf_complex* out = (fftwf_complex*)aligned_alloc(32, align32(window_size * sizeof(fftwf_complex)));
+    float *mono              = malloc(length * sizeof(float)); 
 
-    fftwf_plan plan = fftwf_plan_dft_1d(
-        (int)window_size, 
-        in, 
-        out, 
-        FFTW_FORWARD, 
-        FFTW_WISDOM_ONLY
-    );
-
-    if (!plan) {
-        plan = fftwf_plan_dft_1d(
-            (int)window_size, 
-            in, 
-            out, 
-            FFTW_FORWARD, 
-            FFTW_ESTIMATE
-        );
+    if (!mono) {
+        stft_d error_result = {0};
+        fprintf(stderr, "Memory allocation failed");
+        return error_result;
     }
 
-    for (size_t i = 0; i < max_i; i++) {
+    const float   half   = 0.5f;
+    const size_t  c_size = window_size * sizeof(fftwf_complex);
+
+    if (channels == 1) memcpy(mono,audio->samples,length*sizeof(float));
+    else if (channels == 2) {
+        #pragma omp parallel for 
+        for (size_t i = 0; i < length; i++) mono[i] = (audio->samples[i * 2] + audio->samples[i * 2 + 1]) * half;
+    }
+
+    memset(in, 0.0f, window_size * sizeof(fftwf_complex));
+
+    for (size_t i = 0; i < output_size; i++) {
         const size_t start_idx = i * hop_size;
-
-        for (size_t j = 0; j < window_size; j++) {
-            float sum = 0.0f;
-            for (size_t ch = 0; ch < channels; ch++) {
-                sum += audio->samples[start_idx + (j * channels) + ch];
-            }
-            in[j][0] = (sum * window_values[j]) / channels;
-            in[j][1] = 0.0f;
-        }
-
+        for (size_t j = 0; j < window_size; j++) in[j][0] = mono[start_idx + j] * window_values[j];
         fftwf_execute(plan);
-
-        const size_t offset = i * num_frequencies;
-        compute_magnitudes_and_phases_scalar(out, result.magnitudes, result.phases, offset, num_frequencies);
+        memcpy(&(result.phasers[i * window_size]), out,c_size);
     }
 
-    fftwf_destroy_plan(plan);
-    free(in);
-    free(out);
+    free(mono);
+
+    const size_t total_size = output_size * result.num_frequencies;
+
+    #pragma omp parallel for 
+    for (size_t i = 0; i < total_size; i++) {
+        const float real     = result.phasers[i * 2];
+        const float imag     = result.phasers[i * 2 + 1];
+        result.magnitudes[i] = sqrtf(real * real + imag * imag);
+    }
 
     return result;
 }

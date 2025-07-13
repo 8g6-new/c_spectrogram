@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
         free(mel_values);
         free(mel_filter_bank);
         free(contious_mem);
-        free_fft(&fft_plan);
+        free_fft_plan(&fft_plan);
         free(dft_coff.coeffs);
         free(non_zero.freq_indexs);
         free(non_zero.weights);
