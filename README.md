@@ -12,7 +12,6 @@ This repository provides a high-performance C library for audio signal processin
 - **Short-Time Fourier Transform (STFT)**:
   - Computes STFT with FFTW, optimized using wisdom caching for fast FFT planning.
   - Supports multiple window functions (Hann, Hamming, Blackman, Bartlett, Blackman-Harris, Flat-top, Gaussian, Kaiser).
-  - SIMD optimizations (SSE, SSE2, AVX, AVX2) for magnitude and phase calculations.
   - Configurable window size, hop size, and frequency bounds.
 
 - **Mel Spectrogram**:
@@ -38,7 +37,6 @@ This repository provides a high-performance C library for audio signal processin
   - JSON and raw timing formats for integration with analysis tools.
 
 - **Performance Optimizations**:
-  - SIMD (SSE, SSE2, AVX, AVX2) with Fused Multiply-Add (FMA) and 16-bit floating-point conversions.
   - OpenMP parallelization for STFT, Mel spectrogram, MFCC, and visualization loops.
   - FFTW wisdom caching to reuse optimized FFT plans.
   - BLAS integration for fast linear algebra in Mel and MFCC computations.
@@ -65,7 +63,6 @@ This repository provides a high-performance C library for audio signal processin
   - BLAS (e.g., OpenBLAS) for matrix operations.
   - libpng for PNG output.
 - **Optional**: OpenCV for additional color scheme support (`opencv_like` build target).
-- **Hardware**: Supports SSE, SSE2, AVX, and AVX2 instructions 
 
 ## Installation
 
@@ -361,8 +358,7 @@ Credit this work if you use it in your research or application.
 
 - Built with inspiration from [Librosa](https://librosa.org/), aiming for high-performance audio processing in C.
 
-- Tested on bioacoustics datasets (e.g., bird calls), with thanks to open-source audio libraries like [FFTW](http://www.fftw.org/) and [libsndfile](http://www.mega-nerd.com/libsndfile/).
-
+- Tested on bioacoustics datasets (e.g., bird calls), with thanks to open-source audio libraries like FFTW and [ibsndfile
 - Special thanks to the open-source community for tools like [OpenBLAS](https://www.openblas.net/), [libpng](http://www.libpng.org/pub/png/libpng.html), and [OpenMP](https://www.openmp.org/).
 
 - Gratitude to [lucasb-eyer/libheatmap](https://github.com/lucasb-eyer/libheatmap) for the heatmap visualization module used in this project.
