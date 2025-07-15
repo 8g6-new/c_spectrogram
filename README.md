@@ -4,15 +4,32 @@
 
 ## Key Features
 
-- **Audio I/O**: Reads WAV, FLAC, and MP3 with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s so fast it’s almost unfair; [libsndfile](https://libsndfile.github.io/libsndfile/) handles WAV/FLAC like a champ.
-- **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs, but it’s still slower than Librosa for reasons we can’t quite pin down. Supports window functions like Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds to your heart’s content.
-- **Mel Spectrogram**: Builds Mel filter banks dynamically and tries to go fast with BLAS (`cblas_sdot`) and OpenMP. Spoiler: it’s not fast enough, and the output went wonky when we pushed too hard. Still, it’s got optional dB scaling with branchless computation for a bit of cool.
+- **Audio I/O**: Reads WAV, ACC, MP3 etc with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s as fast as minimp3 allows and for other formats it use [libsndfile](https://libsndfile.github.io/libsndfile/).
+- **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs, but it’s still slower than Librosa for reasons I can’t quite pin down. Supports window functions like Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds to your heart’s content.
+- **Mel Spectrogram**: Builds Mel filter banks dynamically and tries to go fast with BLAS (`cblas_sdot`) and OpenMP. it’s not fast enough, and the output went wonky when we pushed too hard. Still, it’s got optional dB scaling with branchless computation for a bit of cool.
 - **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs with precomputed DCT coefficients and BLAS. OpenMP helps, but it’s not blowing anyone away. Heatmap visualizations look nice, though, with customizable colors.
 - **Visualization**: Spits out STFT, Mel spectrograms, and MFCCs as PNG heatmaps via [libheatmap](https://github.com/lucasb-eyer/libheatmap). Tons of color schemes (Blues, Viridis, Inferno, Plasma) in discrete, mixed, mixed_exp, and soft flavors. Cache-friendly memory ops keep rendering snappy.
 - **Benchmarking**: Microsecond-precision profiling for STFT, Mel, MFCC, and visualization. Ranked timing reports with color-coded bars show you exactly where the pipeline’s dragging its feet. Outputs JSON and raw formats for analysis.
 - **Performance Optimizations**: OpenMP parallelizes everything, FFTW wisdom caching saves time, and BLAS tries to speed up matrix ops (with mixed results). Compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO) and aligned memory allocations push the hardware, but we’re not at Librosa’s level yet.
 - **Applications**: Great for bioacoustics (e.g., bird calls with `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`), large-scale audio processing, ML feature extraction, and DSP research.
 
+## 💡 Motivation
+
+The main motivation behind this project was to gain a deeper understanding of both C and digital signal processing (DSP). While there are countless tutorials on using MFCCs and Mel filter banks, I found that very few actually explain how to compute them from scratch. The process was often unclear, especially in terms of implementation.
+
+When I searched for minimalist MFCC pipelines, I found projects like [rust-mfcc](https://github.com/rodrigo-martinezd/rust-mfcc) which performs impressively - up to 2× faster than Librosa - but relies on dependencies. I noticed a lack of simple, lightweight, and well-structured MFCC/STFT implementations in C that prioritize:
+
+1. **Readability**: Code simple enough for anyone with basic C knowledge to understand
+2. **Educational Value**: Clear demonstration of DSP fundamentals
+3. **Transparency**: Every processing step explicitly implemented
+
+Through building this project, I gained a fundamental understanding of:
+- How FFT, windowing, and overlap interact
+- Mel filter bank construction principles
+- MFCC derivation using DCT
+- The critical role of memory layout in DSP performance
+
+This isn't about outperforming Librosa or Rust implementations, but about creating an accessible reference that helps others learn DSP by doing. If this project helps demystify audio signal processing for others, it will have succeeded.
 
 ## Pipeline Overview
 
