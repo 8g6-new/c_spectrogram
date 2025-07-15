@@ -39,7 +39,7 @@ flowchart TD
     A["📥 Audio Input (.wav / .mp3)"] --> B["🔍 Auto File Type Detection"]
     B --> C{"🧩 Format Type"}
     C -->|MP3| D["🎧 Decode with minimp3"]
-    C -->|WAV| E["🎵 Read with libsndfile"]
+    C -->|Other| E["🎵 Read with libsndfile"]
     D --> F["🎚️ Normalize → Float32"]
     E --> F
 
