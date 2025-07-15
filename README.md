@@ -1,7 +1,7 @@
 # c_spectrogram : Audio Signal Processing and Visualization
 
 
-This repository provides a high-performance C library for audio signal processing and visualization, featuring Short-Time Fourier Transform (STFT), Mel spectrograms, Mel-Frequency Cepstral Coefficients (MFCC), and heatmap visualizations. Designed for large-scale audio datasets, it leverages optimizations like SIMD (SSE, SSE2, AVX, AVX2), FFTW with wisdom caching, OpenMP parallelization, and BLAS for fast matrix operations. The library supports WAV and MP3 inputs, produces professional-grade visualizations with customizable color schemes, and includes robust benchmarking tools for performance analysis.
+This repository provides a high-performance C library for audio signal processing and visualization, featuring Short-Time Fourier Transform (STFT), Mel spectrograms, Mel-Frequency Cepstral Coefficients (MFCC), and heatmap visualizations. Designed for large-scale audio datasets with wisdom caching, OpenMP parallelization, and BLAS for fast matrix operations. It supports all audio inputs via [libsndfile](http://www.mega-nerd.com/libsndfile/) (WAV, FLAC, etc.) and MP3 decoding via [minimp3](https://github.com/lieff/minimp3). The library produces professional-grade visualizations, produces visualizations with customizable color schemes, and includes robust benchmarking tools for performance analysis.
 
 ## Features
 
