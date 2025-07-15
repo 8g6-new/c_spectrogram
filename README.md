@@ -15,21 +15,29 @@
 
 ## 💡 Motivation
 
-The main motivation behind this project was to gain a deeper understanding of both C and digital signal processing (DSP). While there are countless tutorials on using MFCCs and Mel filter banks, I found that very few actually explain how to compute them from scratch. The process was often unclear, especially in terms of implementation.
+The main motivation behind this project was to gain a deeper understanding of both **C** and **digital signal processing (DSP)**. While there are countless tutorials on how to **use** MFCCs and Mel filter banks, very few actually explain how to **compute** them from scratch. The process was often fragmented or hidden behind library calls.
 
-When I searched for minimalist MFCC pipelines, I found projects like [rust-mfcc](https://github.com/rodrigo-martinezd/rust-mfcc) which performs impressively - up to 2× faster than Librosa - but relies on dependencies. I noticed a lack of simple, lightweight, and well-structured MFCC/STFT implementations in C that prioritize:
+When searching for minimalist MFCC pipelines, I came across excellent projects like [rust-mfcc](https://github.com/rodrigo-martinezd/rust-mfcc), which performed impressively — about **2.5× faster than Librosa** on synthetic benchmarks ([Colab Notebook](https://github.com/8g6-new/mfcc_rust_bench/blob/master/rust_vs_python.ipynb)).  
+However, they often rely on external dependencies and abstractions that obscure what's happening under the hood.
 
-1. **Readability**: Code simple enough for anyone with basic C knowledge to understand
-2. **Educational Value**: Clear demonstration of DSP fundamentals
-3. **Transparency**: Every processing step explicitly implemented
+I noticed a lack of **simple, dependency-free, well-structured C implementations** of STFT, Mel spectrograms, and MFCCs that emphasize:
 
-Through building this project, I gained a fundamental understanding of:
-- How FFT, windowing, and overlap interact
-- Mel filter bank construction principles
-- MFCC derivation using DCT
-- The critical role of memory layout in DSP performance
+1. **Readability** – Code that beginners in C can actually follow  
+2. **Educational Value** – A step-by-step DSP pipeline laid bare  
+3. **Transparency** – Each transform is explicitly written (FFT, Mel bank, DCT)
 
-This isn't about outperforming Librosa or Rust implementations, but about creating an accessible reference that helps others learn DSP by doing. If this project helps demystify audio signal processing for others, it will have succeeded.
+As I built this project, I came to understand and appreciate:
+- How **windowing**, **hop size**, and **FFT resolution** interact  
+- The inner workings of **Mel filter bank construction**  
+- How to derive **MFCCs using DCT**, and why the coefficients matter  
+- The performance implications of **memory layout**, **cache locality**, and **contiguous memory access**  
+- How small details like **loop nesting**, **BLAS vectorization**, and **data alignment** can drastically affect speed
+
+This project isn't **currently** trying to beat Librosa or Rust DSP libraries in performance — **though future optimizations may close the gap**.
+
+Instead, it's meant to be a **clear, hackable, and minimalist reference** for students, hobbyists, and anyone who wants to learn DSP by building it from the ground up.
+
+If it helps others demystify the DSP pipeline or write their own from scratch, then it's done its job.
 
 ## Pipeline Overview
 
