@@ -19,35 +19,54 @@
 The following diagram illustrates the audio processing and visualization pipeline:
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '12px'}}}%%
-graph TD
-    A["Audio Input (.wav / .mp3)"] --> B["Auto File Type Detection"]
-    B --> C{Format Type}
-    C -->|MP3| D["Decode with minimp3"]
-    C -->|WAV| E["Read with libsndfile"]
-    D --> F["Normalize & Convert to Float32"]
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#1e1e1e",          %% Node background (very dark)
+    "primaryTextColor": "#ffffff",      %% Text color (white)
+    "primaryBorderColor": "#ffaa00",    %% Orange border for visibility
+    "clusterBkg": "#2a2a2a",            %% Subgraph background (dark gray)
+    "clusterBorder": "#ffaa00",         %% Subgraph border color
+    "lineColor": "#ffaa00",             %% Arrow color
+    "fontSize": "14px",
+    "fontFamily": "monospace"
+  }
+}}%%
+
+flowchart TD
+
+    %% Input and Decoding
+    A["📥 Audio Input (.wav / .mp3)"] --> B["🔍 Auto File Type Detection"]
+    B --> C{"🧩 Format Type"}
+    C -->|MP3| D["🎧 Decode with minimp3"]
+    C -->|WAV| E["🎵 Read with libsndfile"]
+    D --> F["🎚️ Normalize → Float32"]
     E --> F
 
-    subgraph Feature_Extraction
-        F --> G["Apply Window Function (e.g., Hann)"]
-        G --> H["Compute STFT via FFTW + Wisdom"]
-        H --> I["Extract Magnitudes & Phases"]
-        I --> J["Apply Mel Filter Bank via BLAS"]
-        J --> K["Compute MFCC with Precomputed DCT"]
+    %% Feature Extraction
+    subgraph Feature Extraction
+        F --> G["🪟 Apply Window Function (e.g., Hann)"]
+        G --> H["⚡ STFT (FFTW + Wisdom)"]
+        H --> I["📊 Extract Magnitudes & Phases"]
+        I --> J["🎚️ Apply Mel Filter Bank (BLAS)"]
+        J --> K["🎯 Compute MFCC (DCT)"]
     end
 
+    %% Visualization
     subgraph Visualization
-        H --> L1["Save STFT Heatmap"]
-        J --> L2["Save Mel Spectrogram"]
-        K --> L3["Save MFCC Heatmap"]
+        H --> V1["🖼️ STFT Heatmap"]
+        J --> V2["🎨 Mel Spectrogram"]
+        K --> V3["🌡️ MFCC Heatmap"]
     end
 
+    %% Benchmarking
     subgraph Benchmarking
-        H --> B1["Time STFT Execution"]
-        J --> B2["Time Mel Computation"]
-        K --> B3["Time MFCC Extraction"]
-        L1 --> B4["Time Plot Generation"]
+        H --> B1["⏱️ Time STFT"]
+        J --> B2["⏱️ Time Mel Computation"]
+        K --> B3["⏱️ Time MFCC Extraction"]
+        V1 --> B4["⏱️ Time Plot Generation"]
     end
+
 ```
 
 ## Performance Highlights
