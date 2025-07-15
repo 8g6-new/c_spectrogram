@@ -50,42 +50,44 @@
 The following diagram illustrates the audio processing and visualization pipeline:
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'font-size': '12px'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '12px'}}}%%
 graph TD
-    A[Audio Input (.wav/.mp3)] --> B[Auto File Type Detection]
+    A["Audio Input (.wav / .mp3)"] --> B["Auto File Type Detection"]
     B --> C{Format Type}
-    C -->|MP3| D[Decode with minimp3]
-    C -->|WAV| E[Read with libsndfile]
-    D --> F[Normalize & Convert to Float32]
+    C -->|MP3| D["Decode with minimp3"]
+    C -->|WAV| E["Read with libsndfile"]
+    D --> F["Normalize & Convert to Float32"]
     E --> F
 
-    subgraph Feature Extraction
-        F --> G[Apply Window Function<br/>(e.g., Hann)]
-        G --> H[Compute STFT<br/>via FFTW + Wisdom]
-        H --> I[Extract Magnitudes<br/>& Phases]
-        I --> J[Apply Mel Filter Bank<br/>via BLAS (cblas_sdot)]
-        J --> K[Compute MFCC<br/>with Precomputed DCT]
+    subgraph Feature_Extraction
+        F --> G["Apply Window Function (e.g., Hann)"]
+        G --> H["Compute STFT via FFTW + Wisdom"]
+        H --> I["Extract Magnitudes & Phases"]
+        I --> J["Apply Mel Filter Bank via BLAS"]
+        J --> K["Compute MFCC with Precomputed DCT"]
     end
 
     subgraph Visualization
-        H --> L1[Save STFT Heatmap<br/>(libheatmap/png)]
-        J --> L2[Save Mel Spectrogram]
-        K --> L3[Save MFCC Heatmap]
+        H --> L1["Save STFT Heatmap"]
+        J --> L2["Save Mel Spectrogram"]
+        K --> L3["Save MFCC Heatmap"]
     end
 
     subgraph Benchmarking
-        H --> B1[Time STFT Execution]
-        J --> B2[Time Mel Computation]
-        K --> B3[Time MFCC Extraction]
-        L1 --> B4[Time Plot Generation]
+        H --> B1["Time STFT Execution"]
+        J --> B2["Time Mel Computation"]
+        K --> B3["Time MFCC Extraction"]
+        L1 --> B4["Time Plot Generation"]
     end
 ```
 
 ## Performance Highlights
 
-- **Speed**: Outperforms Python equivalents (e.g., [Librosa](https://librosa.org/)) in MP3 decoding and plot saving due to efficient I/O and PNG handling.
-- **Scalability**: OpenMP scales with CPU cores; some implicit SIMD optimizations via `minimp3` and compiler flags (`-mavx`, `-msse4.2`).
-- **Profiling**: Detailed benchmarking (`print_bench_ranked`) identifies bottlenecks for optimization.
+- **MP3 Decoding & PNG Saving**: Shockingly fast — faster than Librosa, faster than anything in Python. minimp3 and libpng just show up, do their job, and leave. If the whole pipeline moved like this, we’d be done before the coffee brewed.
+
+- **STFT & Mel Spectrogram**: Still slower than Librosa — even with FFTW wisdom caching and OpenMP. Not sure why. Librosa somehow still beats it. The Mel spectrogram part was especially disappointing: I tried to make it fast with BLAS, but the output came out wrong. Only one loop could be vectorized — the other two just sat there, immune to optimization. The filter bank creation is clean, but the actual dot-product part still suffers under that cursed 2-level nested loop ( I could eliminate 1 loop via BALS though, kinda win ig).
+
+- **Scalability**: OpenMP does help  not so much , very much unsable until you compare the core DSP to librosa
 
 ## Requirements
 
@@ -247,7 +249,6 @@ int main() {
     return 0;
 }
 ```
-
 ## Sample Visualizations
 
 Below are sample visualizations generated from `black_woodpecker.wav`, showcasing STFT spectrograms, Mel spectrograms, and MFCC heatmaps with various color schemes. These examples use the `builtin` and `opencv_like` builds.
@@ -266,23 +267,30 @@ Below are sample visualizations generated from `black_woodpecker.wav`, showcasin
 
 ### Mel Spectrogram and MFCC
 - **Mel Spectrogram (Cividis)**: Visualizes Mel filter bank output.
-  ![Mel Spectrogram](outputs/functions/black_woodpecker_mel.png)
+  ![Mel Spectrogram](outputs/functions/black_woodpecke_mel.png)
 - **MFCC (Blues Soft)**: Displays cepstral coefficients for feature extraction.
-  ![MFCC](outputs/functions/black_woodpecker_mfcc.png)
+  ![MFCC](outputs/functions/black_woodpecke_mfcc.png)
 
-Explore all color schemes in:
+To explore all available color schemes (e.g., Blues, Viridis, Jet, Inferno in discrete, mixed, mixed_exp, and soft variants), refer to the `README.MD` files in:
 - [`outputs/colorschemes/libheatmap_defaults/README.MD`](./outputs/colorschemes/libheatmap_defaults/README.MD) for built-in color schemes.
 - [`outputs/colorschemes/opencv_like/README.MD`](./outputs/colorschemes/opencv_like/README.MD) for OpenCV-like color schemes.
 
+These files include comprehensive galleries of all color schemes applied to `black_woodpecker.wav`.
+
 ## 🎨 Colormap Enum Reference
-Supported colormaps are listed in:
+All supported colormaps are listed in the file:
+
 ```bash
 output/colors.json
 ```
-This file maps human-readable names to enum IDs for:
-- OpenCV-like colormaps (e.g., JET, VIRIDIS, HOT).
-- Built-in scientific colormaps (e.g., Blues.soft, Spectral.mixed_exp).
-See [`outputs/README.MD`](./outputs/README.MD) for details.
+This file maps human-readable names to internal enum IDs for both:
+
+OpenCV-like colormaps (e.g., JET, VIRIDIS, HOT)
+
+Built-in scientific colormaps (e.g., Blues.soft, Spectral.mixed_exp)
+
+Refer [`outputs/README.MD`](./outputs/README.MD)
+
 
 ## Output Directory Structure
 The `outputs` directory contains:
@@ -301,18 +309,80 @@ The `print_bench_ranked` function generates a ranked table of execution times:
 
 **Example**:
 ```
+### 🔍 Sample Benchmark Output
+
+```text
+Running builtin...
+Input Filename       : ./tests/files/173.mp3
+Output Filename      : bird
+Window Size          : 2048
+Hop Size             : 128
+Window Type          : hann
+Number of Filters    : 128
+Min Mel Frequency    : 0.00
+Max Mel Frequency    : 7500.00
+Number of Coeffs     : 64
+Cache STFT Channels  : 2
+Cache Mel Channels   : 3
+Cache MFCC Channels  : 4
+Cache Folder         : ./cache/FFT
+./tests/files/173.mp3 auto detected to be audio/mpeg
+duration:58.032
+channels:1
+num_samples:2785536
+sample_rate:48000.0000
+file_size_bytes:784356
+Cache not found or import failed. Creating FFT plan...
+Error saving wisdom to file: ./cache/FFT/2048.wisdom
+enum 2 => libheatmap builtin color scheme : main type PRGn , subtype mixed
+stft ended
+Time bounds:
+  Start (f): 0.00
+  End   (f): 0.00
+  Start (d): 0
+  End   (d): 21747
+Frequency bounds:
+  Start (f): 0.00
+  End   (f): 7500.00
+  Start (d): 0
+  End   (d): 320
+
+copy ended
+
+bird_stft.png saved
+bird_mel.png saved
+bird_mfcc.png saved
 ---------------------------------------------------------
-| Function             | Exec Time    | % of Total Runtime |
+| Function             | Exec Time    | % of total runtime |
 ---------------------------------------------------------
-| stft                |   12.345 ms  |  45.6789%         |
-[▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰        ]
-| mel                 |    8.901 ms  |  32.1234%         |
-[▰▰▰▰▰▰▰▰▰▰▰▰▰▰                ]
-| mfcc                |    3.456 ms  |  12.3456%         |
-[▰▰▰▰▰▰                      ]
-...
+| stft_plot            |      7.206 s | 49.4490% |
+[▰▰▰▰▰▰▰▰▰           ]
+| mel                  |      3.518 s | 24.1430% |
+[▰▰▰▰                ]
+| mfcc                 |      2.283 s | 15.6638% |
+[▰▰▰                 ]
+| stft                 |   925.131 ms | 6.3480% |
+[▰                   ]
+| dec_mp3              |   482.269 ms | 3.3092% |
+[                    ]
+| fetch fft cache 1    |   129.612 ms | 0.8894% |
+[                    ]
+| copy                 |    27.156 ms | 0.1863% |
+[                    ]
+| file_read            |      658 µs | 0.0045% |
+[                    ]
+| dtft coff            |      391 µs | 0.0027% |
+[                    ]
+| mel filter bank      |      390 µs | 0.0027% |
+[                    ]
+| stft window          |      146 µs | 0.0010% |
+[                    ]
+| auto_det             |       65 µs | 0.0004% |
+[                    ]
 ---------------------------------------------------------
 ```
+
+bechmarked in colab
 
 ## Build Configuration
 
