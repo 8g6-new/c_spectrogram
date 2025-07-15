@@ -2,6 +2,17 @@
 
 **c_spectrogram** is a high-performance C library for audio signal processing and visualization, featuring Short-Time Fourier Transform (STFT), Mel spectrograms, Mel-Frequency Cepstral Coefficients (MFCC), and professional-grade heatmap visualizations. Optimized for large-scale audio datasets, it leverages [FFTW](http://www.fftw.org/) with wisdom caching, [OpenMP](https://www.openmp.org/) parallelization, and BLAS ([OpenBLAS](https://www.openblas.net/)) for fast matrix operations. The library supports multiple audio formats (WAV, FLAC, MP3) via [libsndfile](https://libsndfile.github.io/libsndfile/) and [minimp3](https://github.com/lieff/minimp3), and offers customizable visualizations with extensive color schemes.
 
+## Key Features
+
+- **Audio I/O**: Reads WAV, FLAC, and MP3 with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s so fast it’s almost unfair; [libsndfile](https://libsndfile.github.io/libsndfile/) handles WAV/FLAC like a champ.
+- **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs, but it’s still slower than Librosa for reasons we can’t quite pin down. Supports window functions like Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds to your heart’s content.
+- **Mel Spectrogram**: Builds Mel filter banks dynamically and tries to go fast with BLAS (`cblas_sdot`) and OpenMP. Spoiler: it’s not fast enough, and the output went wonky when we pushed too hard. Still, it’s got optional dB scaling with branchless computation for a bit of cool.
+- **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs with precomputed DCT coefficients and BLAS. OpenMP helps, but it’s not blowing anyone away. Heatmap visualizations look nice, though, with customizable colors.
+- **Visualization**: Spits out STFT, Mel spectrograms, and MFCCs as PNG heatmaps via [libheatmap](https://github.com/lucasb-eyer/libheatmap). Tons of color schemes (Blues, Viridis, Inferno, Plasma) in discrete, mixed, mixed_exp, and soft flavors. Cache-friendly memory ops keep rendering snappy.
+- **Benchmarking**: Microsecond-precision profiling for STFT, Mel, MFCC, and visualization. Ranked timing reports with color-coded bars show you exactly where the pipeline’s dragging its feet. Outputs JSON and raw formats for analysis.
+- **Performance Optimizations**: OpenMP parallelizes everything, FFTW wisdom caching saves time, and BLAS tries to speed up matrix ops (with mixed results). Compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO) and aligned memory allocations push the hardware, but we’re not at Librosa’s level yet.
+- **Applications**: Great for bioacoustics (e.g., bird calls with `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`), large-scale audio processing, ML feature extraction, and DSP research.
+
 
 ## Pipeline Overview
 
