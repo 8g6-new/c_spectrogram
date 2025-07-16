@@ -100,7 +100,7 @@ flowchart TD
 
 - **STFT & Mel Spectrogram**: Still slower than Librosa — even with FFTW wisdom caching and OpenMP. Not sure why. Librosa somehow still beats it. The Mel spectrogram part was especially disappointing: I tried to make it fast with BLAS, but the output came out wrong. Only one loop could be vectorized — the other two just sat there, immune to optimization. The filter bank creation is clean, but the actual dot-product part still suffers under that cursed 2-level nested loop ( I could eliminate 1 loop via BALS though, kinda win ig).
 
-- **Scalability**: OpenMP does help  not so much , very much unsable until you compare the core DSP to librosa
+- **Scalability**: OpenMP does help  not so much , very much usable until you compare the core DSP to librosa
 
 ## Requirements
 
@@ -111,7 +111,6 @@ flowchart TD
   - **OpenMP** ([OpenMP](https://www.openmp.org/)) for parallel processing.
   - **BLAS** (e.g., [OpenBLAS](https://www.openblas.net/)) for matrix operations.
   - **libpng** ([libpng](http://www.libpng.org/pub/png/libpng.html)) for PNG output.
-- **Hardware**: Modern CPU recommended for optimal performance.
 
 ## Installation
 
