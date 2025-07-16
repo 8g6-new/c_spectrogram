@@ -4,7 +4,7 @@
 
 ## Key Features
 
-- **Audio I/O**: Reads WAV, ACC, MP3 etc with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s as fast as minimp3 allows and for other formats it use [libsndfile](https://libsndfile.github.io/libsndfile/).
+- **Audio I/O**: Reads WAV, AAC, MP3 etc with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s as fast as minimp3 allows and for other formats it use [libsndfile](https://libsndfile.github.io/libsndfile/).
 - **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs, but it’s still slower than Librosa for reasons I can’t quite pin down. Supports window functions like Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds to your heart’s content.
 - **Mel Spectrogram**: Builds Mel filter banks dynamically and tries to go fast with BLAS (`cblas_sdot`) and OpenMP. it’s not fast enough, and the output went wonky when we pushed too hard. Still, it’s got optional dB scaling with branchless computation for a bit of cool.
 - **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs with precomputed DCT coefficients and BLAS. OpenMP helps, but it’s not blowing anyone away. Heatmap visualizations look nice, though, with customizable colors.
