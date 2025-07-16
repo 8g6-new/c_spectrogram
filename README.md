@@ -137,15 +137,7 @@ Choose a build target:
   ```bash
   make opencv_like
   ```
-- **Shared library**:
-  ```bash
-  make shared
-  ```
-- **Debug builds**:
-  ```bash
-  make debug_builtin
-  make debug_opencv_like
-  ```
+
 
 The build creates executables in `build/builtin` or `build/opencv` and generates FFTW wisdom files in `cache/FFT` (e.g., `1024.wisdom`).
 
