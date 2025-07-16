@@ -316,73 +316,84 @@ The `print_bench_ranked` function generates a ranked table of execution times:
 
 ### 🔍 Sample Benchmark Output
 
+For this input 
+
+```bash
+./opencv_like "./tests/files/black_woodpecker.wav" bird 2048 128 hann 256 0 7500 128 16 16 16 "./cache/FFT" 
+```
+
+or use can simply use after building either opencv_like (Color 16 will be Cividis) or builtin (Color 16 will be BuPu - discrete)
+
+```bash
+make run 
+```
+
 ```text
-Running builtin...
-Input Filename       : ./tests/files/173.mp3
+Running opencv_like...
+Input Filename       : ./tests/files/black_woodpecker.wav
 Output Filename      : bird
 Window Size          : 2048
 Hop Size             : 128
 Window Type          : hann
-Number of Filters    : 128
+Number of Filters    : 256
 Min Mel Frequency    : 0.00
 Max Mel Frequency    : 7500.00
 Number of Coeffs     : 64
-Cache STFT Channels  : 2
-Cache Mel Channels   : 3
-Cache MFCC Channels  : 4
+Cache STFT Channels  : 16
+Cache Mel Channels   : 16
+Cache MFCC Channels  : 16
 Cache Folder         : ./cache/FFT
-./tests/files/173.mp3 auto detected to be audio/mpeg
-duration:58.032
+./tests/files/black_woodpecker.wav auto detected to be audio/wav
+duration:1.022
 channels:1
-num_samples:2785536
-sample_rate:48000.0000
-file_size_bytes:784356
-Cache not found or import failed. Creating FFT plan...
-Error saving wisdom to file: ./cache/FFT/2048.wisdom
-enum 2 => libheatmap builtin color scheme : main type PRGn , subtype mixed
+num_samples:44954
+sample_rate:44000.0000
+file_size_bytes:90288
+Loaded optimized FFT plan: ./cache/FFT/2048.wisdom
+enum 16  => Open CV Like color scheme : Viridis
 stft ended
 Time bounds:
   Start (f): 0.00
   End   (f): 0.00
   Start (d): 0
-  End   (d): 21747
+  End   (d): 336
 Frequency bounds:
   Start (f): 0.00
   End   (f): 7500.00
   Start (d): 0
-  End   (d): 320
+  End   (d): 349
 
 copy ended
 
 bird_stft.png saved
+
 bird_mel.png saved
+
 bird_mfcc.png saved
 ---------------------------------------------------------
 | Function             | Exec Time    | % of total runtime |
 ---------------------------------------------------------
-| stft_plot            |      7.206 s | 49.4490% |
-[▰▰▰▰▰▰▰▰▰           ]
-| mel                  |      3.518 s | 24.1430% |
-[▰▰▰▰                ]
-| mfcc                 |      2.283 s | 15.6638% |
-[▰▰▰                 ]
-| stft                 |   925.131 ms | 6.3480% |
+| stft_plot            |    51.238 ms | 42.1403% |
+[▰▰▰▰▰▰▰▰            ]
+| mel                  |    45.871 ms | 37.7263% |
+[▰▰▰▰▰▰▰             ]
+| mfcc                 |    14.181 ms | 11.6631% |
+[▰▰                  ]
+| stft                 |     6.700 ms | 5.5104% |
 [▰                   ]
-| dec_mp3              |   482.269 ms | 3.3092% |
+| mel filter bank      |     1.176 ms | 0.9672% |
 [                    ]
-| fetch fft cache 1    |   129.612 ms | 0.8894% |
+| fetch fft cache 1    |      900 µs | 0.7402% |
 [                    ]
-| copy                 |    27.156 ms | 0.1863% |
+| dec_wav              |      585 µs | 0.4811% |
 [                    ]
-| file_read            |      658 µs | 0.0045% |
+| dtft coff            |      373 µs | 0.3068% |
 [                    ]
-| dtft coff            |      391 µs | 0.0027% |
+| auto_det             |      271 µs | 0.2229% |
 [                    ]
-| mel filter bank      |      390 µs | 0.0027% |
+| copy                 |      253 µs | 0.2081% |
 [                    ]
-| stft window          |      146 µs | 0.0010% |
-[                    ]
-| auto_det             |       65 µs | 0.0004% |
+| stft window          |       41 µs | 0.0337% |
 [                    ]
 ---------------------------------------------------------
 ```
