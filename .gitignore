@@ -1,6 +1,6 @@
 build
 .last_target
-.wisdom
+*.wisdom
 
 !/outputs/*
 !/tests
