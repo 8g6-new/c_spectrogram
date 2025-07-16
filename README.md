@@ -250,13 +250,14 @@ Below are visualizations produced by the pipeline for a single audio input (`bla
 
 ### 🎛️ Function Outputs
 
-| Output Type               | Color Scheme     | Description  (Settings 2048 FFT Size, Hop Size 128)                                        | Preview |
-|---------------------------|------------------|-----------------------------------------------------|---------|
-| **STFT Spectrogram**      | Cividis          | Raw STFT            | ![STFT Cividis](outputs/functions/bird_stft.png) |
-| **Mel Spectrogram**       | Cividis          | Mel filter bank with 256 filter      | ![Mel Spectrogram](outputs/functions/bird_mel.png) |
-| **MFCC**                  | Cividis       | Cepstral coefficients   with 128 coffs                            | ![MFCC](outputs/functions/bird_mfcc.png) |
+Visualizations generated using a 2048-point FFT, 128-sample hop size, and **Cividis** colormap.
 
----
+| Output Type         | Description                                      | Preview |
+|---------------------|--------------------------------------------------|---------|
+| **STFT Spectrogram**| Raw Short-Time Fourier Transform magnitudes      | ![STFT Cividis](outputs/functions/bird_stft.png) |
+| **Mel Spectrogram** | Mel filter bank output (256 filters)             | ![Mel Spectrogram](outputs/functions/bird_mel.png) |
+| **MFCC**            | 128-dimensional Mel-Frequency Cepstral Coefficients | ![MFCC](outputs/functions/bird_mfcc.png) |
+
 
 ### 🐢 STFT Spectrograms (Built-in Color Schemes)
 
