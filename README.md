@@ -272,7 +272,7 @@ Below are visualizations produced by the pipeline for a single audio input (`bla
 
 | Colormap        | Description                                       | Preview |
 |------------------|---------------------------------------------------|---------|
-| **Viridis**      | Scientific colormap emphasizing smooth gradients | ![STFT Viridis](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Viridis.png) |
+| **Rainbow**      | Scientific colormap emphasizing smooth gradients | ![STFT Viridis](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Rainbow.png.png) |
 | **Jet**          | High-contrast legacy colormap                    | ![STFT Jet](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Jet.png) |
 
 
@@ -322,7 +322,7 @@ For this input
 ./opencv_like "./tests/files/black_woodpecker.wav" bird 2048 128 hann 256 0 7500 128 16 16 16 "./cache/FFT" 
 ```
 
-or use can simply use after building either opencv_like (Color 16 will be Cividis) or builtin (Color 16 will be BuPu - discrete)
+or use can simply use after building either opencv_like (Color 16 will be [Cividis](outputs/functions/bird_stft.png)) or builtin (Color 16 will be [`BuPu - discrete`](outputs/colorschemes/libheatmap_defaults/discrete/black_woodpecker_stft_BuPu_discrete.png))
 
 ```bash
 make run 
