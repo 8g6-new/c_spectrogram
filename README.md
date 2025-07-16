@@ -268,6 +268,8 @@ Below are visualizations produced by the pipeline for a single audio input (`bla
 ---
 
 ### 🎨 STFT Spectrograms (OpenCV-like Color Schemes)
+ *Colormaps generated via custom script using OpenCV reference gradients:*  
+[`ref/opencv_like/colormap_gen.py`](https://github.com/8g6-new/CARA/blob/main/ref/opencv_like/colormap_gen.py)
 
 | Colormap        | Description                                       | Preview |
 |------------------|---------------------------------------------------|---------|
