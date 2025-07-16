@@ -168,7 +168,7 @@ run:
 	  echo "Executable '$$LAST_TARGET' not found. Run 'make' first."; exit 1; \
 	fi; \
 	echo "Running $$LAST_TARGET..."; \
-	perf stat ./$$LAST_TARGET "./tests/files/173.mp3" bird 2048 128 hann 128 0 7500 64 2 3 4 "./cache/FFT"
+	perf stat ./$$LAST_TARGET "./tests/files/black_woodpecker.wav" bird 2048 128 hann 256 0 7500 128 16 16 16 "./cache/FFT"
 
 clean:
 	rm -rf $(BUILDDIR)

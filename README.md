@@ -251,11 +251,11 @@ Below are visualizations produced by the pipeline for a single audio input (`bla
 
 ### 🎛️ Function Outputs
 
-| Output Type               | Color Scheme     | Description                                         | Preview |
+| Output Type               | Color Scheme     | Description  (Settings 2048 FFT Size, Hop Size 128)                                        | Preview |
 |---------------------------|------------------|-----------------------------------------------------|---------|
-| **STFT Spectrogram**      | Cividis          | Raw STFT data visualized as a spectrogram           | ![STFT Cividis](outputs/functions/black_woodpecke_stft.png) |
-| **Mel Spectrogram**       | Cividis          | Mel filter bank output from STFT magnitudes         | ![Mel Spectrogram](outputs/functions/black_woodpecke_mel.png) |
-| **MFCC**                  | Blues Soft       | Cepstral coefficients                               | ![MFCC](outputs/functions/black_woodpecke_mfcc.png) |
+| **STFT Spectrogram**      | Cividis          | Raw STFT            | ![STFT Cividis](outputs/functions/bird_stft.png) |
+| **Mel Spectrogram**       | Cividis          | Mel filter bank with 256 filter      | ![Mel Spectrogram](outputs/functions/bird_mel.png) |
+| **MFCC**                  | Cividis       | Cepstral coefficients   with 128 coffs                            | ![MFCC](outputs/functions/bird_mfcc.png) |
 
 ---
 
