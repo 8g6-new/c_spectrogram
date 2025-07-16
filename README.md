@@ -272,7 +272,7 @@ Below are visualizations produced by the pipeline for a single audio input (`bla
 
 | Colormap        | Description                                       | Preview |
 |------------------|---------------------------------------------------|---------|
-| **Rainbow**      | Scientific colormap emphasizing smooth gradients | ![STFT Viridis](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Rainbow.png) |
+| **Rainbow**      | A bright and cheerful spectrum of colors. | ![STFT Viridis](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Rainbow.png) |
 | **Jet**          | High-contrast legacy colormap                    | ![STFT Jet](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Jet.png) |
 
 
