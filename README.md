@@ -121,10 +121,6 @@ For Ubuntu/Debian:
 sudo apt-get update
 sudo apt-get install libfftw3-dev libsndfile1-dev libopenblas-dev libpng-dev libomp-dev
 ```
-For OpenCV-like color schemes (optional):
-```bash
-sudo apt-get install libopencv-dev
-```
 
 ### Step 2: Clone the Repository
 ```bash
