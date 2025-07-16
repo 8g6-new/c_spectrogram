@@ -313,7 +313,7 @@ The `print_bench_ranked` function generates a ranked table of execution times:
 - Visual: Color-coded bars for quick bottleneck identification.
 
 **Example**:
-```
+
 ### 🔍 Sample Benchmark Output
 
 ```text
