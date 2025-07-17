@@ -98,7 +98,7 @@ audio_data read_wav(const char *filename, long file_size) {
     audio.file_size = file_size;
 
     SNDFILE *file;
-    SF_INFO sf_info = {0};  // Initialize sf_info to zero
+    SF_INFO sf_info = {0};  
 
     file = sf_open(filename, SFM_READ, &sf_info);
     if (!file) {
