@@ -2,18 +2,18 @@
 
 **CARA** is a high-performance C library for audio signal processing and visualization, featuring Short-Time Fourier Transform (STFT), Mel spectrograms, Mel-Frequency Cepstral Coefficients (MFCC), and professional-grade heatmap visualizations. Optimized for large-scale audio datasets, it leverages [FFTW](http://www.fftw.org/) with wisdom caching, [OpenMP](https://www.openmp.org/) parallelization, and BLAS ([OpenBLAS](https://www.openblas.net/)) for fast matrix operations. The library supports multiple audio formats (WAV, FLAC, MP3) via [libsndfile](https://libsndfile.github.io/libsndfile/) and [minimp3](https://github.com/lieff/minimp3), and offers customizable visualizations with extensive color schemes.
 
-## Key Features
+## ✨ Key Features
 
-- **Audio I/O**: Reads WAV, AAC, MP3 etc with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s as fast as minimp3 allows and for other formats it use [libsndfile](https://libsndfile.github.io/libsndfile/).
-- **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs, but it’s still slower than Librosa for reasons I can’t quite pin down. Supports window functions like Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds to your heart’s content.
-- **Mel Spectrogram**: Builds Mel filter banks dynamically and tries to go fast with BLAS (`cblas_sdot`) and OpenMP. it’s not fast enough, and the output went wonky when we pushed too hard. Still, it’s got optional dB scaling with branchless computation for a bit of cool.
-- **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs with precomputed DCT coefficients and BLAS. OpenMP helps, but it’s not blowing anyone away. Heatmap visualizations look nice, though, with customizable colors.
-- **Visualization**: Spits out STFT, Mel spectrograms, and MFCCs as PNG heatmaps via [libheatmap](https://github.com/lucasb-eyer/libheatmap).🎨 130 Colormap Variants Supported (
-22 OpenCV-style colormap + 108 scientific colormaps with discrete, soft, mixed, and mixed_exp variants (27 base × 4 variants))
-
-- **Benchmarking**: Microsecond-precision profiling for STFT, Mel, MFCC, and visualization. Ranked timing reports with color-coded bars show you exactly where the pipeline’s dragging its feet. Outputs JSON and raw formats for analysis.
-- **Performance Optimizations**: OpenMP parallelizes everything, FFTW wisdom caching saves time, and BLAS tries to speed up matrix ops (with mixed results). Compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO) and aligned memory allocations push the hardware, not at Librosa’s level yet.
-- **Applications**: Great for bioacoustics (e.g., bird calls with `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`), large-scale audio processing, ML feature extraction, and DSP research.
+- 🎧 **Audio I/O**: Reads WAV, AAC, MP3 etc. with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s as fast as minimp3 allows; other formats use [libsndfile](https://libsndfile.github.io/libsndfile/).
+- 📊 **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs. Still slower than Librosa for unknown reasons. Supports Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds freely.
+- 🔊 **Mel Spectrogram**: Dynamically builds Mel filter banks. Accelerated with BLAS (`cblas_sdot`) and OpenMP. Has optional dB scaling with branchless computation for speed—though aggressive tuning causes glitches.
+- 🧠 **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs using precomputed DCT coefficients and BLAS. OpenMP parallelization helps. Not blazing fast, but supports clean heatmap visualizations with custom colormaps.
+- 🖼️ **Visualization**: Outputs STFT, Mel spectrograms, and MFCCs as PNG heatmaps using [libheatmap](https://github.com/lucasb-eyer/libheatmap). Supports 🎨 **130 Colormap Variants**:
+  - 🎨 22 OpenCV-style colormaps
+  - 🌈 108 scientific colormaps (27 base × 4 variants: discrete, soft, mixed, mixed_exp)
+- ⏱️ **Benchmarking**: Microsecond-precision profiling for STFT, Mel, MFCC, and visualization. Ranked timing reports with color-coded bars show exactly where time is spent. Outputs JSON and raw data for further analysis.
+- ⚙️ **Performance Optimizations**: OpenMP parallelism, FFTW wisdom caching, BLAS matrix ops, and compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO). Aligned memory helps—still not Librosa-tier, but close.
+- 🐦 **Applications**: Ideal for bioacoustics (e.g., bird calls: `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`), large-scale audio processing, ML feature extraction, and DSP research.
 
 ## 💡 Motivation
 
