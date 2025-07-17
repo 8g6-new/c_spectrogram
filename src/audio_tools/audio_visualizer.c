@@ -114,7 +114,7 @@ float *mel_spectrogram(float *contious_mem,const size_t num_filters,const size_t
 
     float *mel_values    = (float*) malloc(num_filters * w * sizeof(float));
 
-    #pragma omp parallel for she
+    #pragma omp parallel for 
     for (size_t t = tstart; t < tend; t++) {
         const size_t offset1 = (t - tstart) * h;
         const size_t offset3 = t * num_filters;
