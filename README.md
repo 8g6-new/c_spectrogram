@@ -8,7 +8,9 @@
 - **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs, but it’s still slower than Librosa for reasons I can’t quite pin down. Supports window functions like Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds to your heart’s content.
 - **Mel Spectrogram**: Builds Mel filter banks dynamically and tries to go fast with BLAS (`cblas_sdot`) and OpenMP. it’s not fast enough, and the output went wonky when we pushed too hard. Still, it’s got optional dB scaling with branchless computation for a bit of cool.
 - **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs with precomputed DCT coefficients and BLAS. OpenMP helps, but it’s not blowing anyone away. Heatmap visualizations look nice, though, with customizable colors.
-- **Visualization**: Spits out STFT, Mel spectrograms, and MFCCs as PNG heatmaps via [libheatmap](https://github.com/lucasb-eyer/libheatmap). Tons of color schemes (Blues, Viridis, Inferno, Plasma) in discrete, mixed, mixed_exp, and soft flavors. Cache-friendly memory ops keep rendering snappy.
+- **Visualization**: Spits out STFT, Mel spectrograms, and MFCCs as PNG heatmaps via [libheatmap](https://github.com/lucasb-eyer/libheatmap).🎨 130 Colormap Variants Supported (
+22 OpenCV-style colormap + 108 scientific colormaps with discrete, soft, mixed, and mixed_exp variants (27 base × 4 variants))
+
 - **Benchmarking**: Microsecond-precision profiling for STFT, Mel, MFCC, and visualization. Ranked timing reports with color-coded bars show you exactly where the pipeline’s dragging its feet. Outputs JSON and raw formats for analysis.
 - **Performance Optimizations**: OpenMP parallelizes everything, FFTW wisdom caching saves time, and BLAS tries to speed up matrix ops (with mixed results). Compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO) and aligned memory allocations push the hardware, not at Librosa’s level yet.
 - **Applications**: Great for bioacoustics (e.g., bird calls with `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`), large-scale audio processing, ML feature extraction, and DSP research.
