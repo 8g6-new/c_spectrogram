@@ -3,23 +3,10 @@
 #include <string.h>
 
 
-#define EXP 3  // milliseconds
-
 #include "headers/audio_tools/audio_visualizer.h"
 #include "headers/utils/bench.h"
 
-void time_it(struct timeval start, char *str) {
-    struct timeval end;
-    gettimeofday(&end, NULL);
 
-    long seconds = end.tv_sec - start.tv_sec;
-    long microseconds = end.tv_usec - start.tv_usec;
-    double elapsed = seconds + microseconds * 1e-6;
-
-    printf("\n%f ms for %s\n", elapsed * 1000.0, str);
-
-    
-}
 
 int main(int argc, char *argv[]) {
        if (argc != 14) {
@@ -42,6 +29,11 @@ int main(int argc, char *argv[]) {
     unsigned short cs_mfcc         = (unsigned short int)atoi(argv[12]);
     const char         *cache_fol  = argv[13];
 
+    char *stft_str = cs_from_enum(cs_stft, false);
+    char *mel_str  = cs_from_enum(cs_mel, false);
+    char *mfcc_str = cs_from_enum(cs_mfcc, false);
+
+
 
     printf("Input Filename       : %s\n", ip_filename);
     printf("Output Filename      : %s\n", op_filename);
@@ -52,115 +44,137 @@ int main(int argc, char *argv[]) {
     printf("Min Mel Frequency    : %.2f\n", min_mel);
     printf("Max Mel Frequency    : %.2f\n", max_mel);
     printf("Number of Coeffs     : %hu\n", num_coff);
-    printf("Cache STFT Channels  : %hu\n", cs_stft);
-    printf("Cache Mel Channels   : %hu\n", cs_mel);
-    printf("Cache MFCC Channels  : %hu\n", cs_mfcc);
+    printf("STFT Color Scheme    : %s\n", stft_str);
+    printf("Mel Color Scheme     : %s\n", mel_str);
+    printf("MFCC Color Scheme    : %s\n", mfcc_str);
     printf("Cache Folder         : %s\n", cache_fol);
 
-
-    char stft_filename[100], mel_filename[100], mfcc_filename[100]; 
-
+    free(stft_str);
+    free(mel_str);
+    free(mfcc_str);
+    
     audio_data audio               = auto_detect(ip_filename);
 
     size_t num_frequencies         = (size_t) window_size / 2;
 
     print_ad(&audio);
 
-    if(audio.samples!=NULL){
+    if (audio.samples != NULL) {
 
-
-
+        // ---- Precompute: Window ----
         START_TIMING();
-        float *window_values           = (float*) malloc(window_size * sizeof(float));    // pre cal to avoid repated calc
-        window_function(window_values,window_size,window_type);
-        END_TIMING("stft window");
-        START_TIMING();
-        START_TIMING();
-        float *mel_filter_bank  = (float*) calloc((num_frequencies + 1) * (num_filters + 2), sizeof(float)); // type casting to enforce type safety && zero value init ;
-        melbank_t non_zero      = mel_filter(min_mel,max_mel,num_filters,audio.sample_rate,window_size,mel_filter_bank);   // pre cal to avoid repated calc
-        END_TIMING("mel filter bank");
-        START_TIMING();
-        mffc_t dft_coff         = precompute_cosine_coeffs(num_filters,num_coff);
-        END_TIMING("dtft coff");
+        float *window_values = (float*) malloc(window_size * sizeof(float));
+        window_function(window_values, window_size, window_type);
+        END_TIMING("pre:win");
 
-    
-
+        // ---- Precompute: Mel Filterbank ----
         START_TIMING();
-        fft_d fft_plan = init_fftw_plan(window_size,cache_fol);
-        END_TIMING("fetch fft cache 1");
+        float *filterbank = (float*) calloc((num_frequencies + 1) * (num_filters + 2), sizeof(float));
+        filter_bank_t bank = gen_filterbank(F_MEL, min_mel, max_mel, num_filters,
+                                            audio.sample_rate, window_size, filterbank);
+        END_TIMING("pre:mel");
 
-        cs_from_enum(cs_stft,true);
+        // ---- Precompute: DCT Coefficients ----
+        START_TIMING();
+        dct_t dft_coff = gen_cosine_coeffs(num_filters, num_coff);
+        END_TIMING("pre:dct");
 
-        plot_t settings={
+        // ---- Precompute: FFT Plan ----
+        START_TIMING();
+        fft_d fft_plan = init_fftw_plan(window_size, cache_fol);
+        END_TIMING("pre:fft");
+
+        // ---- Plot Settings ----
+        cs_from_enum(cs_stft, true);
+        plot_t settings = {
             .cs_enum = cs_stft,
             .db = true
         };
-
         settings.bg_color[0] = 0;
         settings.bg_color[1] = 0;
         settings.bg_color[2] = 0;
         settings.bg_color[3] = 255;
 
-
-
+        // ---- STFT ----
         START_TIMING();
-        stft_d result           = stft(&audio,window_size,hop_size,window_values,&fft_plan);
+        stft_d result = stft(&audio, window_size, hop_size, window_values, &fft_plan);
         END_TIMING("stft");
 
         printf("\nstft ended\n");
 
-        bounds2d_t bounds   = {0};
-        
+        // ---- Bounds ----
+        bounds2d_t bounds = {0};
         bounds.freq.start_f = min_mel;
         bounds.freq.end_f   = max_mel;
-        
-        init_bounds(&bounds,&result);
-        set_limits(&bounds,result.num_frequencies,result.output_size);
-       
-       
-        print_bounds(&bounds);
-        float *contious_mem     = malloc((bounds.freq.end_d - bounds.freq.start_d) * (bounds.time.end_d - bounds.time.start_d) * sizeof(float));
-        
 
+        init_bounds(&bounds, &result);
+        set_limits(&bounds, result.num_frequencies, result.output_size);
+
+        print_bounds(&bounds);
+
+        const size_t t_len = bounds.time.end_d - bounds.time.start_d;
+        const size_t f_len = bounds.freq.end_d - bounds.freq.start_d;
+
+        float *cont_mem = malloc(t_len * f_len * sizeof(float));
+
+        // ---- Copy Magnitudes ----
         START_TIMING();
-        fast_copy(contious_mem,result.magnitudes,&bounds,result.num_frequencies);
+        fast_copy(cont_mem, result.magnitudes, &bounds, result.num_frequencies);
         END_TIMING("copy");
+
         printf("\ncopy ended\n");
 
-        free_stft(&result);
-        free_audio(&audio);
-        
-        sprintf(settings.output_file, "%s_stft.png", op_filename); 
-        
+        // ---- Plot STFT ----
+        sprintf(settings.output_file, "%s_stft.png", op_filename);
+        settings.w = t_len;
+        settings.h = f_len;
         START_TIMING();
-        spectrogram(contious_mem,&bounds,&settings);
-        END_TIMING("stft_plot");
+        plot(cont_mem, &bounds, &settings);
+        END_TIMING("plt:stft");
 
-       
-
-        sprintf(settings.output_file, "%s_mel.png", op_filename); 
+        // ---- Compute Mel ----
         START_TIMING();
-        float *mel_values = mel_spectrogram(contious_mem,num_filters,result.num_frequencies,mel_filter_bank,&bounds,&settings);
+        float *mel_values = apply_filter_bank(cont_mem, num_filters, result.num_frequencies,
+                                            filterbank, &bounds, &settings);
         END_TIMING("mel");
-        
-        sprintf(settings.output_file, "%s_mfcc.png", op_filename); 
+
+        // ---- Plot Mel ----
+        sprintf(settings.output_file, "%s_mel.png", op_filename);
+        settings.h = num_filters;
+        settings.w = t_len;
         START_TIMING();
-        mfcc(mel_values,&dft_coff,&bounds,&settings);
+        plot(mel_values, &bounds, &settings);
+        END_TIMING("plt:mel");
+
+
+        // ---- Compute MFCC ----
+        START_TIMING();
+        float *fcc_values = FCC(mel_values, &dft_coff, &bounds, &settings);
         END_TIMING("mfcc");
 
-        print_bench_ranked();
- 
-       
+        // ---- Plot MFCC ----
+        sprintf(settings.output_file, "%s_mfcc.png", op_filename);
+        settings.h = dft_coff.num_coff;
+        settings.w = t_len;
+        START_TIMING();
+        plot(fcc_values, &bounds, &settings);
+        END_TIMING("plt:mfcc");
+
+        // ---- Cleanup ----
+        free_stft(&result);
+        free_audio(&audio);
         free(window_values);
         free(mel_values);
-        free(mel_filter_bank);
-        free(contious_mem);
+        free(fcc_values);
+        free(filterbank);
+        free(cont_mem);
         free_fft_plan(&fft_plan);
         free(dft_coff.coeffs);
-        free(non_zero.freq_indexs);
-        free(non_zero.weights);
+        free(bank.freq_indexs);
+        free(bank.weights);
 
-    } 
-   
+        print_bench_ranked();
+    }
+
     
 }

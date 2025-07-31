@@ -46,51 +46,46 @@ float print_ad(audio_data *data) {
 
 void free_audio(audio_data *audio) {
     if (audio) {
-        if (audio->samples) {  // Check if samples is not NULL before freeing
+        if (audio->samples) { 
             free(audio->samples);
             audio->samples = NULL;
         }
     }
 }
 
-void read_file(const char *filename, uint64_t *size, uint8_t **data) {
-    *size = 0;
-    *data = NULL;
+file_buffer read_file(const char *filename) {
+    file_buffer result = {.data = NULL, .size = 0};
 
     FILE *fin = fopen(filename, "rb");
-    
     if (!fin) {
-        printf("\nError opening input file\n");
-        perror("fopen");
-        return;
+        fprintf(stderr, "Error: Failed to open file '%s'\n", filename);
+        return result;
     }
 
     struct stat st;
     if (fstat(fileno(fin), &st) != 0) {
-        perror("fstat");
+        fprintf(stderr, "Error: fstat failed for file '%s'\n", filename);
         fclose(fin);
-        return;
+        return result;
     }
 
-    *size = (uint64_t)st.st_size;
-
-    *data = malloc(*size);
-
-    if (!*data) {
-        fprintf(stderr, "Memory allocation failed\n");
-        *size = 0;
+    result.size = (uint64_t)st.st_size;
+    result.data = (uint8_t *)malloc(result.size);
+    if (!result.data) {
+        fprintf(stderr, "Error: Memory allocation failed for file '%s' (%lu bytes)\n", filename, result.size);
         fclose(fin);
-        return;
+        return result;
     }
 
-    if (fread(*data, 1, *size, fin) != *size) {
-        perror("fread");
-        free(*data);
-        *data = NULL;
-        *size = 0;
+    if (fread(result.data, 1, result.size, fin) != result.size) {
+        fprintf(stderr, "Error: fread failed for file '%s'\n", filename);
+        free(result.data);
+        result.data = NULL;
+        result.size = 0;
     }
 
     fclose(fin);
+    return result;
 }
 
 audio_data read_wav(const char *filename, long file_size) {
@@ -119,7 +114,6 @@ audio_data read_wav(const char *filename, long file_size) {
     if (frames_read < sf_info.frames) {
         fprintf(stderr, "Error reading audio data: read %lld of %lld frames\n", 
                 (long long)frames_read, (long long)sf_info.frames);
-        // Adjust num_samples based on what was actually read
         audio.num_samples = (size_t)frames_read * sf_info.channels;
     }
 
@@ -130,6 +124,48 @@ audio_data read_wav(const char *filename, long file_size) {
     return audio;
 }
 
+
+frames find_mp3_frame_offsets(file_buffer *buf) {
+    frames result = {.data = NULL, .count = 0, .avg_byte_per_frame = 0.0f};
+
+    int offset = 0;
+    int free_format_bytes = 0;
+    int frame_bytes = 0;
+
+  
+    int max_frames = buf->size / WORST_CASE_FRAME_SIZE;   // seee audio_io.h line 5
+
+    result.data = (unsigned short *)malloc(max_frames * sizeof(unsigned short));
+    if (!result.data) {
+        fprintf(stderr, "Memory allocation failed for %d frames\n", max_frames);
+        return result;
+    }
+
+    int frame_index = 0;
+    int total_bytes = 0;
+
+    while (offset < buf->size && frame_index < max_frames) {
+        int next_offset = mp3d_find_frame(buf->data + offset, buf->size - offset, &free_format_bytes, &frame_bytes);
+
+        if (frame_bytes == 0 || next_offset < 0)
+            break;
+
+        int total_advance = next_offset + frame_bytes;
+
+        result.data[frame_index++] = (unsigned short)total_advance;
+        total_bytes += total_advance;
+        offset += total_advance;
+    }
+
+    result.count = frame_index;
+    if (frame_index > 0)
+        result.avg_byte_per_frame = (float)total_bytes / frame_index;
+
+    return result;
+}
+
+
+
 audio_data read_mp3(const char *filename, long file_size) {
     audio_data audio = {0};
     audio.file_size = file_size;
@@ -137,54 +173,58 @@ audio_data read_mp3(const char *filename, long file_size) {
     static mp3dec_t mp3d;
     mp3dec_init(&mp3d);
 
-    uint64_t buf_size = 0;
-    uint8_t *input_buf = NULL;
-    
     START_TIMING();
-    read_file(filename, &buf_size, &input_buf);
+    file_buffer buf = read_file(filename);
     END_TIMING("file_read");
-   
-    START_TIMING();
-    if (!input_buf) {
+
+    if (!buf.data || buf.size == 0) {
         fprintf(stderr, "Failed to read input file: %s\n", filename);
         return audio;
     }
 
-    // More conservative estimation of max samples to prevent buffer overflow
-    size_t max_pcm_samples = (buf_size * MINIMP3_MAX_SAMPLES_PER_FRAME) / 128;
-    size_t pcm_bsiz = max_pcm_samples * sizeof(W_D_TYPE) * 2;  // Account for stereo
+    START_TIMING();
+    frames f = find_mp3_frame_offsets(&buf);
+    END_TIMING("frame_scan");
+
+    printf("Total frames: %d\n", f.count);
+    printf("Average frame size: %.2f bytes\n", f.avg_byte_per_frame);
+
+
+    // Estimate max PCM samples (safe upper bound at 32kbps)
+    size_t max_pcm_samples = (buf.size * MINIMP3_MAX_SAMPLES_PER_FRAME) / 32;
+    size_t pcm_bsiz        = max_pcm_samples * sizeof(PARAM_DATATYPE) * 2;
 
     audio.samples = malloc(pcm_bsiz);
     if (!audio.samples) {
         fprintf(stderr, "Memory allocation failed\n");
-        free(input_buf);
+        free(buf.data);
+        free(f.data);
         return audio;
     }
 
-    W_D_TYPE *full_pcm = (W_D_TYPE *)audio.samples;
-
+    PARAM_DATATYPE *full_pcm = (PARAM_DATATYPE *)audio.samples;
     uint64_t decoded_samples = 0;
-    int remaining_size = buf_size;
-    uint8_t *input_ptr = input_buf;
 
+    uint8_t *input_ptr = buf.data;
+    int remaining_size = buf.size;
+
+    START_TIMING();
     while (remaining_size > 0) {
         mp3dec_frame_info_t info;
-        W_D_TYPE pcm[MINIMP3_MAX_SAMPLES_PER_FRAME * 2];  // Buffer for stereo
+        PARAM_DATATYPE pcm[MINIMP3_MAX_SAMPLES_PER_FRAME * 2];
 
         int samples = mp3dec_decode_frame(&mp3d, input_ptr, remaining_size, pcm, &info);
 
-        if (info.frame_bytes == 0 || remaining_size < info.frame_bytes) {
+        if (info.frame_bytes == 0 || remaining_size < info.frame_bytes)
             break;
-        }
 
         if (samples > 0) {
-            // Check for potential buffer overflow
             if ((decoded_samples + samples) * info.channels > max_pcm_samples) {
                 fprintf(stderr, "PCM buffer overflow prevented\n");
                 break;
             }
 
-            size_t copy_size = samples * sizeof(W_D_TYPE) * info.channels;
+            size_t copy_size = samples * sizeof(PARAM_DATATYPE) * info.channels;
             memcpy(full_pcm + (decoded_samples * info.channels), pcm, copy_size);
             decoded_samples += samples;
 
@@ -195,14 +235,18 @@ audio_data read_mp3(const char *filename, long file_size) {
         input_ptr += info.frame_bytes;
         remaining_size -= info.frame_bytes;
     }
-
-    // Set the correct number of samples
-    audio.num_samples = decoded_samples * audio.channels;
-    
-    free(input_buf);
     END_TIMING("dec_mp3");
+
+    audio.num_samples = decoded_samples * audio.channels;
+
+    free(buf.data);
+    free(f.data);
+
     return audio;
 }
+
+
+
 
 audio_data auto_detect(const char *filename) {
     audio_data audio = {0};

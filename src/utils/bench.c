@@ -25,6 +25,7 @@
  */
 
 
+
 benchmark_t benchmarks;
 
 void benchmark_init() {
@@ -33,10 +34,12 @@ void benchmark_init() {
     benchmarks.start_time = 0;
 }
 
-long long get_current_time_us() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (long long)tv.tv_sec * 1000000 + tv.tv_usec;
+
+
+long long get_time_us() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
 
 void record_timing(const char *function_name) {
@@ -45,7 +48,7 @@ void record_timing(const char *function_name) {
         return;
     }
 
-    long long end_time = get_current_time_us();
+    long long end_time = get_time_us();
     benchmarks.timings[benchmarks.timing_index].time_us = end_time - benchmarks.start_time;
     benchmarks.total_time += benchmarks.timings[benchmarks.timing_index].time_us;
 
@@ -59,15 +62,54 @@ void record_timing(const char *function_name) {
     benchmarks.timing_index++;
 }
 
-void format_time_us(long long time_us, char *buffer, size_t size) {
-    if (time_us < 1000) {
-        snprintf(buffer, size, "%4lld µs", time_us);
-    } else if (time_us < 1000000) {
-        snprintf(buffer, size, "%7.3f ms", time_us / 1000.0);
-    } else {
-        snprintf(buffer, size, "%7.3f s", time_us / 1000000.0);
+
+scale get_scale(double v) {
+    if (v == 0.0) {
+        return scales[scale_nano_idx]; 
     }
+    for (int i = scale_count - 1; i >= 0; --i) {
+        double scaled = v / scales[i].scale_divisor;
+        if (fabs(scaled) >= 1.0) {
+            return scales[i];
+        }
+    }
+    return scales[scale_nano_idx]; 
 }
+
+void format_scaled(double val, char *buffer, size_t buf_size, const char *unit) {
+    scale s = get_scale(val);
+    double scaled = val / s.scale_divisor;
+    snprintf(buffer, buf_size, "%7.3f %s%s", scaled, s.suffix, unit);
+}
+
+
+void FFT_bench(double mu_s, unsigned int FFT_size) {
+
+    if (mu_s <= 0.0f)
+        return;
+
+    double fft_points    = (double)FFT_size;
+
+    
+    double mflops        = (5.0 * fft_points * log2(fft_points)) / (mu_s * scales[scale_micro_idx].scale_divisor);
+    // radix 2 mflops formula  (https://www.fftw.org/speed/)
+
+    char time_buffer[STRING_LENGTH];
+    char mflops_buffer[STRING_LENGTH];
+
+    format_scaled(mu_s * scales[scale_micro_idx].scale_divisor , time_buffer , STRING_LENGTH, "s");
+    format_scaled(mflops, mflops_buffer, STRING_LENGTH, "FLOP/s");
+
+
+    fprintf(stdout, "%s%s%s", BAR_COLOR, line, RESET);
+    fprintf(stdout, "⏱️  %sFFT per frame%s  : %s%s%s (%.3f µs)\n", 
+            BRIGHT_CYAN, RESET, BRIGHT_YELLOW, time_buffer, RESET, mu_s);
+    fprintf(stdout, "⚡  %sSpeed         %s  : %s%s%s (%.3f FLOP/s)\n", 
+            BRIGHT_CYAN, RESET, BRIGHT_GREEN, mflops_buffer, RESET, mflops);
+    fprintf(stdout, "%s%s%s", BAR_COLOR, line, RESET);
+    
+}
+
 
 int compare_times(const void *a, const void *b) {
     return ((time_info*)b)->time_us - ((time_info*)a)->time_us;
@@ -101,8 +143,8 @@ void print_bench_ranked() {
         double percentage = (double)benchmarks.timings[i].time_us * 100.0 / benchmarks.total_time;
         int filled_length = (int)(BAR_LENGTH * percentage / 100.0);
 
-        char time_str[15];
-        format_time_us(benchmarks.timings[i].time_us, time_str, sizeof(time_str));
+        char time_str[STRING_LENGTH];
+        format_scaled(benchmarks.timings[i].time_us * scales[scale_micro_idx].scale_divisor, time_str,STRING_LENGTH,"s");
 
         const char *func_color = get_gradient_color((double)benchmarks.timings[i].time_us / max_time * 100.0);
 

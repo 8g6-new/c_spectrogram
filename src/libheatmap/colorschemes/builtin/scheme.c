@@ -72,14 +72,21 @@ const char *main_cs[] = {
 
 #define NUM_SCHEMES (sizeof(main_cs) / sizeof(main_cs[0]))
 
-char *fetch_color_builtin(cs_enum type,bool log){
-  if(log)
-        printf("enum %d => libheatmap builtin color scheme : main type %s , subtype %s",type,main_cs[(int) type/4],color_subtypes[cs[type]->type]);
+char *fetch_color_builtin(cs_enum type, bool log) {
+    const char *main = main_cs[(int)type / 4];
+    const char *sub  = color_subtypes[cs[type]->type];
 
-   char buffer[20];
-   sprintf(buffer, "%s_%s",main_cs[(int) type/4],color_subtypes[cs[type]->type]);
-   return buffer; 
+    if (log)
+        printf("enum %d => libheatmap builtin color scheme : main type %s , subtype %s\n", type, main, sub);
+
+    size_t len = strlen(main) + 1 + strlen(sub) + 1; 
+    char *result = malloc(len);
+    if (result)
+        sprintf(result, "%s_%s", main, sub);
+
+    return result;
 }
+
 
 void print_all_cs() {
     for (size_t i = 0; i < NUM_CS_MAX; i++) { 
