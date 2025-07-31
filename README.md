@@ -258,18 +258,18 @@ Visualizations generated using a **2048-point FFT**, **128-sample hop size**, an
 
 | Output Type              | Description                                                | Colormap Used | Preview |
 |--------------------------|------------------------------------------------------------|----------------|---------|
-| **STFT Spectrogram**     | Raw Short-Time Fourier Transform magnitudes                | Inferno        | ![STFT](outputs/functions/bird_stft.png) |
-| **Mel Filterbank**       | 256-filter Mel-scale spectrogram                           | Viridis        | ![Mel](outputs/functions/bird_mel.png) |
-| **MFCC**                 | 128 Mel-Frequency Cepstral Coefficients                    | Rainbow        | ![MFCC](outputs/functions/bird_mfcc.png) |
-| **Bark Filterbank**      | Bark-scale filter spectrogram                              | Plasma         | ![Bark](outputs/functions/bird_BARK.png) |
-| **BFCC**                 | Bark-scale Frequency Cepstral Coefficients                 | Rainbow        | ![BFCC](outputs/functions/bird_BFCC.png) |
-| **ERB Filterbank**       | Equivalent Rectangular Bandwidth filter spectrogram        | Magma          | ![ERB](outputs/functions/bird_ERB.png) |
-| **ERB-FCC**              | ERB-based Frequency Cepstral Coefficients                  | Rainbow        | ![ERB FCC](outputs/functions/bird_ERB_fcc.png) |
-| **CHIRP Filterbank**     | Chirp-scale filter spectrogram                             | Cividis        | ![Chirp](outputs/functions/bird_CHIRP.png) |
-| **CHIRP-FCC**            | Chirp-scale Frequency Cepstral Coefficients                | Rainbow        | ![Chirp FCC](outputs/functions/bird_CHIRP_fcc.png) |
-| **Cambridge ERB-Rate**   | Cochlear-inspired ERB-rate (Glasberg-Moore) visualization  | Turbo          | ![CAM](outputs/functions/bird_CAM.png) |
-| **Ranked Spectrum**      | Ranked/Sorted energy bins from filtered signal             | Spectral       | ![Ranked](outputs/functions/bird_ranked.png) |
-| **Input Signal**         | Raw or pre-filter STFT-like visualization                  | Greys          | ![Input](outputs/functions/bird_inputs.png) |
+| **STFT Spectrogram**     | Raw Short-Time Fourier Transform magnitudes                | Inferno        | ![STFT](outputs/functions/stft.png) |
+| **Mel Filterbank**       | 256-filter Mel-scale spectrogram                           | Viridis        | ![Mel](outputs/functions/mel.png) |
+| **MFCC**                 | 128 Mel-Frequency Cepstral Coefficients                    | Rainbow        | ![MFCC](outputs/functions/mfcc.png) |
+| **Bark Filterbank**      | Bark-scale filter spectrogram                              | Plasma         | ![Bark](outputs/functions/BARK.png) |
+| **BFCC**                 | Bark-scale Frequency Cepstral Coefficients                 | Rainbow        | ![BFCC](outputs/functions/BFCC.png) |
+| **ERB Filterbank**       | Equivalent Rectangular Bandwidth filter spectrogram        | Magma          | ![ERB](outputs/functions/ERB.png) |
+| **ERB-FCC**              | ERB-based Frequency Cepstral Coefficients                  | Rainbow        | ![ERB FCC](outputs/functions/ERB_fcc.png) |
+| **CHIRP Filterbank**     | Chirp-scale filter spectrogram                             | Cividis        | ![Chirp](outputs/functions/CHIRP.png) |
+| **CHIRP-FCC**            | Chirp-scale Frequency Cepstral Coefficients                | Rainbow        | ![Chirp FCC](outputs/functions/CHIRP_fcc.png) |
+| **Cambridge ERB-Rate**   | Cochlear-inspired ERB-rate (Glasberg-Moore) visualization  | Turbo          | ![CAM](outputs/functions/CAM.png) |
+| **Ranked Spectrum**      | Ranked/Sorted energy bins from filtered signal             | Spectral       | ![Ranked](outputs/functions/ranked.png) |
+| **Input Signal**         | Raw or pre-filter STFT-like visualization                  | Greys          | ![Input](outputs/functions/inputs.png) |
 
 ---
 
@@ -350,7 +350,7 @@ For this input
 ./opencv_like "./tests/files/black_woodpecker.wav" bird 2048 128 hann 256 0 7500 128 16 16 16 "./cache/FFT" 
 ```
 
-or use can simply use after building either opencv_like (Color 16 will be [Cividis](outputs/functions/bird_stft.png)) or builtin (Color 16 will be [`BuPu - discrete`](outputs/colorschemes/libheatmap_defaults/discrete/black_woodpecker_stft_BuPu_discrete.png))
+or use can simply use after building either opencv_like (Color 16 will be [Cividis](outputs/functions/stft.png)) or builtin (Color 16 will be [`BuPu - discrete`](outputs/colorschemes/libheatmap_defaults/discrete/black_woodpecker_stft_BuPu_discrete.png))
 
 ```bash
 make run 
