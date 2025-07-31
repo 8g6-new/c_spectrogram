@@ -6,7 +6,7 @@
 
 - 🎧 **Audio I/O**: Reads WAV, AAC, MP3, etc., with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s efficiently; other formats use [libsndfile](https://libsndfile.github.io/libsndfile/).
 - 📊 **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching and microsecond-precision benchmarking. Supports Hann, Hamming, Blackman, Bartlett, Blackman-Harris, Flattop, Gaussian, and Kaiser windows. Customizable window size, hop size, and frequency bounds.
-- 🔊 **Generalized Filter Bank Spectrograms**: Supports multiple frequency scales (Mel, Bark, ERB, Chirp, Cam, Log10, Cent) with dynamic filter bank generation. Accelerated with BLAS (`cblas_sdot`) and OpenMP. Optional dB scaling with branchless computation for efficiency.
+- 🔊 **Generalized Filter Bank Spectrograms**: Supports multiple frequency scales (Mel, Bark, ERB, Chirp, Cam, Log10) with dynamic filter bank generation. Accelerated with BLAS (`cblas_sdot`) and OpenMP. Optional dB scaling with branchless computation for efficiency.
 - 🧠 **Feature Cepstral Coefficients (FCC)**: Computes FCCs (formerly MFCCs) using precomputed DCT coefficients and BLAS. OpenMP parallelization ensures scalability. Returns coefficient arrays for flexible downstream use.
 - 🖼️ **Visualization**: Outputs STFT, filter bank spectrograms, and FCCs as PNG heatmaps using [libheatmap](https://github.com/lucasb-eyer/libheatmap). Supports 🎨 **130 Colormap Variants**:
   - 🎨 22 OpenCV-style colormaps
@@ -90,7 +90,7 @@ flowchart TD
 
 - **MP3 Decoding & PNG Saving**: Competitive with Python, thanks to efficient [minimp3](https://github.com/lieff/minimp3) and [libpng](http://www.libpng.org/pub/png/libpng.html).
 - **STFT**: Improved with FFTW wisdom caching and OpenMP, but still trails Librosa. New microsecond-precision benchmarking in `main.c` helps identify bottlenecks.
-- **Filter Bank Spectrograms**: Generalized to support Mel, Bark, ERB, Chirp, Cam, Log10, and Cent scales, using BLAS (`cblas_sdot`) and OpenMP. Performance is decent but limited by nested loops; only one loop is vectorized. Future `cblas_sgemm` use could improve this.
+- **Filter Bank Spectrograms**: Generalized to support Mel, Bark, ERB, Chirp, Cam and Log10 scales, using BLAS (`cblas_sdot`) and OpenMP. Performance is decent but limited by nested loops; only one loop is vectorized. Future `cblas_sgemm` use could improve this.
 - **FCC**: Modularized computation returns coefficient arrays, optimized with BLAS and OpenMP. Visualization is decoupled, improving flexibility but requiring separate plotting calls.
 - **Scalability**: OpenMP parallelization scales well on multi-core systems, though Librosa remains faster for unknown reasons.
 
