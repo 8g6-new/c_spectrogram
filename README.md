@@ -1,58 +1,67 @@
 # 🎧 CARA (C Acoustic Representation & Analysis): High-Performance Audio Signal Processing and Visualization Pipeline
 
-**CARA** is a high-performance C library for audio signal processing and visualization, featuring Short-Time Fourier Transform (STFT), generalized filter bank spectrograms (e.g., Mel, Bark, ERB), Feature Cepstral Coefficients (FCC), and professional-grade heatmap visualizations. Optimized for large-scale audio datasets, it leverages [FFTW](http://www.fftw.org/) with wisdom caching, [OpenMP](https://www.openmp.org/) parallelization, and BLAS ([OpenBLAS](https://www.openblas.net/)) for fast matrix operations. The library supports multiple audio formats (WAV, FLAC, MP3) via [libsndfile](https://libsndfile.github.io/libsndfile/) and [minimp3](https://github.com/lieff/minimp3), and offers customizable visualizations with extensive color schemes.
+**CARA** is a high-performance C library for audio signal processing and visualization, featuring Short-Time Fourier Transform (STFT), Mel spectrograms, Mel-Frequency Cepstral Coefficients (MFCC), and professional-grade heatmap visualizations. Optimized for large-scale audio datasets, it leverages [FFTW](http://www.fftw.org/) with wisdom caching, [OpenMP](https://www.openmp.org/) parallelization, and BLAS ([OpenBLAS](https://www.openblas.net/)) for fast matrix operations. The library supports multiple audio formats (WAV, FLAC, MP3) via [libsndfile](https://libsndfile.github.io/libsndfile/) and [minimp3](https://github.com/lieff/minimp3), and offers customizable visualizations with extensive color schemes.
 
 ## ✨ Key Features
 
-- 🎧 **Audio I/O**: Reads WAV, AAC, MP3, etc., with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s efficiently; other formats use [libsndfile](https://libsndfile.github.io/libsndfile/).
-- 📊 **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching and microsecond-precision benchmarking. Supports Hann, Hamming, Blackman, Bartlett, Blackman-Harris, Flattop, Gaussian, and Kaiser windows. Customizable window size, hop size, and frequency bounds.
-- 🔊 **Generalized Filter Bank Spectrograms**: Supports multiple frequency scales (Mel, Bark, ERB, Chirp, Cam, Log10) with dynamic filter bank generation. Accelerated with BLAS (`cblas_sdot`) and OpenMP. Optional dB scaling with branchless computation for efficiency.
-- 🧠 **Feature Cepstral Coefficients (FCC)**: Computes FCCs (formerly MFCCs) using precomputed DCT coefficients and BLAS. OpenMP parallelization ensures scalability. Returns coefficient arrays for flexible downstream use.
-- 🖼️ **Visualization**: Outputs STFT, filter bank spectrograms, and FCCs as PNG heatmaps using [libheatmap](https://github.com/lucasb-eyer/libheatmap). Supports 🎨 **130 Colormap Variants**:
+- 🎧 **Audio I/O**: Reads WAV, AAC, MP3 etc. with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s as fast as minimp3 allows; other formats use [libsndfile](https://libsndfile.github.io/libsndfile/).
+- 📊 **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs. Still slower than Librosa for unknown reasons. Supports Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds freely.
+- 🔊 **Mel Spectrogram**: Dynamically builds Mel filter banks. Accelerated with BLAS (`cblas_sdot`) and OpenMP. Has optional dB scaling with branchless computation for speed—though aggressive tuning causes glitches.
+- 🧠 **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs using precomputed DCT coefficients and BLAS. OpenMP parallelization helps. Not blazing fast, but supports clean heatmap visualizations with custom colormaps.
+- 🖼️ **Visualization**: Outputs STFT, Mel spectrograms, and MFCCs as PNG heatmaps using [libheatmap](https://github.com/lucasb-eyer/libheatmap). Supports 🎨 **130 Colormap Variants**:
   - 🎨 22 OpenCV-style colormaps
   - 🌈 108 scientific colormaps (27 base × 4 variants: discrete, soft, mixed, mixed_exp)
-- ⏱️ **Benchmarking**: Microsecond-precision profiling for STFT, filter bank, FCC, and visualization. Ranked timing reports with color-coded bars identify bottlenecks. Outputs JSON and raw data for analysis.
-- ⚙️ **Performance Optimizations**: OpenMP parallelism, FFTW wisdom caching, BLAS matrix operations, and compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO). Aligned memory allocation enhances cache locality.
+- ⏱️ **Benchmarking**: Microsecond-precision profiling for STFT, Mel, MFCC, and visualization. Ranked timing reports with color-coded bars show exactly where time is spent. Outputs JSON and raw data for further analysis.
+- ⚙️ **Performance Optimizations**: OpenMP parallelism, FFTW wisdom caching, BLAS matrix ops, and compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO). Aligned memory helps—still not Librosa-tier, but close.
 - 🐦 **Applications**: Ideal for bioacoustics (e.g., bird calls: `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`), large-scale audio processing, ML feature extraction, and DSP research.
 
 ## 💡 Motivation
 
-The main motivation behind CARA is to provide a clear, educational, and high-performance C implementation of audio signal processing, focusing on transparency and minimal dependencies. While libraries like [Librosa](https://librosa.org/) and [rust-mfcc](https://github.com/bytesnake/mfcc) offer excellent performance, they often abstract away the DSP pipeline, making it hard for learners to understand the underlying mechanics. CARA addresses this by:
+The main motivation behind this project was to gain a deeper understanding of both **C** and **digital signal processing (DSP)**. While there are countless tutorials on how to **use** MFCCs and Mel filter banks, very few actually explain how to **compute** them from scratch. The process was often fragmented or hidden behind library calls.
 
-1. **Readability**: Clean, well-structured code that beginners in C can follow.
-2. **Educational Value**: A step-by-step DSP pipeline with explicit implementations of STFT, filter banks, and FCCs.
-3. **Transparency**: Detailed computations for windowing, FFT, filter bank construction, and DCT.
-4. **Flexibility**: Support for multiple frequency scales (Mel, Bark, ERB, etc.) for diverse audio analysis tasks.
+When searching for minimalist MFCC pipelines, I came across excellent projects like [rust-mfcc](https://github.com/bytesnake/mfcc), which performed impressively — about **2.5× faster than Librosa** on synthetic benchmarks ([Colab Notebook](https://github.com/8g6-new/mfcc_rust_bench/blob/master/rust_vs_python.ipynb)).  
+However, they often rely on external dependencies and abstractions that obscure what's happening under the hood.
 
-CARA helped me understand:
-- The interplay of **windowing**, **hop size**, and **FFT resolution**.
-- **Filter bank construction** for various frequency scales.
-- **FCC computation** using DCT and its role in audio analysis.
-- The impact of **memory layout**, **cache locality**, and **aligned memory** on performance.
-- Optimization techniques like **BLAS vectorization**, **OpenMP parallelization**, and **loop restructuring**.
+I noticed a lack of **simple, dependency-free, well-structured C implementations** of STFT, Mel spectrograms, and MFCCs that emphasize:
 
-While not yet matching Librosa's performance, CARA is a hackable reference for students, hobbyists, and DSP enthusiasts aiming to build audio processing pipelines from scratch.
+1. **Readability** – Code that beginners in C can actually follow  
+2. **Educational Value** – A step-by-step DSP pipeline laid bare  
+3. **Transparency** – Each transform is explicitly written (FFT, Mel bank, DCT)
+
+As I built this project, I came to understand and appreciate:
+- How **windowing**, **hop size**, and **FFT resolution** interact  
+- The inner workings of **Mel filter bank construction**  
+- How to derive **MFCCs using DCT**, and why the coefficients matter  
+- The performance implications of **memory layout**, **cache locality**, and **contiguous memory access**  
+- How small details like **loop nesting**, **BLAS vectorization**, and **data alignment** can drastically affect speed
+
+This project isn't **currently** trying to beat Librosa or Rust DSP libraries in performance — **though future optimizations may close the gap**.
+
+Instead, it's meant to be a **clear, hackable, and minimalist reference** for students, hobbyists, and anyone who wants to learn DSP by building it from the ground up.
+
+If it helps others demystify the DSP pipeline or write their own from scratch, then it's done its job.
 
 ## Pipeline Overview
 
-The updated pipeline reflects the enhanced abstraction and flexibility of the new implementation:
+The following diagram illustrates the audio processing and visualization pipeline:
 
 ```mermaid
 %%{init: {
   "theme": "base",
   "themeVariables": {
-    "primaryColor": "#1e1e1e",
-    "primaryTextColor": "#ffffff",
-    "primaryBorderColor": "#ffaa00",
-    "clusterBkg": "#2a2a2a",
-    "clusterBorder": "#ffaa00",
-    "lineColor": "#ffaa00",
+    "primaryColor": "#1e1e1e",          %% Node background (very dark)
+    "primaryTextColor": "#ffffff",      %% Text color (white)
+    "primaryBorderColor": "#ffaa00",    %% Orange border for visibility
+    "clusterBkg": "#2a2a2a",            %% Subgraph background (dark gray)
+    "clusterBorder": "#ffaa00",         %% Subgraph border color
+    "lineColor": "#ffaa00",             %% Arrow color
     "fontSize": "14px",
     "fontFamily": "monospace"
   }
 }}%%
 
 flowchart TD
+
     %% Input and Decoding
     A["📥 Audio Input (.wav / .mp3)"] --> B["🔍 Auto File Type Detection"]
     B --> C{"🧩 Format Type"}
@@ -63,36 +72,37 @@ flowchart TD
 
     %% Feature Extraction
     subgraph Feature Extraction
-        F --> G["🪟 Apply Window Function"]
+        F --> G["🪟 Apply Window Function (e.g., Hann)"]
         G --> H["⚡ STFT (FFTW + Wisdom)"]
         H --> I["📊 Extract Magnitudes & Phases"]
-        I --> J["🎚️ Apply Filter Bank (Mel, Bark, ERB, etc.)"]
-        J --> K["🎯 Compute FCC (DCT)"]
+        I --> J["🎚️ Apply Mel Filter Bank (BLAS)"]
+        J --> K["🎯 Compute MFCC (DCT)"]
     end
 
     %% Visualization
     subgraph Visualization
-        I --> V1["🖼️ STFT Heatmap"]
-        J --> V2["🎨 Filter Bank Spectrogram"]
-        K --> V3["🌡️ FCC Heatmap"]
+        H --> V1["🖼️ STFT Heatmap"]
+        J --> V2["🎨 Mel Spectrogram"]
+        K --> V3["🌡️ MFCC Heatmap"]
     end
 
     %% Benchmarking
     subgraph Benchmarking
         H --> B1["⏱️ Time STFT"]
-        J --> B2["⏱️ Time Filter Bank"]
-        K --> B3["⏱️ Time FCC"]
+        J --> B2["⏱️ Time Mel Computation"]
+        K --> B3["⏱️ Time MFCC Extraction"]
         V1 --> B4["⏱️ Time Plot Generation"]
     end
+
 ```
 
 ## Performance Highlights
 
-- **MP3 Decoding & PNG Saving**: Competitive with Python, thanks to efficient [minimp3](https://github.com/lieff/minimp3) and [libpng](http://www.libpng.org/pub/png/libpng.html).
-- **STFT**: Improved with FFTW wisdom caching and OpenMP, but still trails Librosa. New microsecond-precision benchmarking in `main.c` helps identify bottlenecks.
-- **Filter Bank Spectrograms**: Generalized to support Mel, Bark, ERB, Chirp, Cam and Log10 scales, using BLAS (`cblas_sdot`) and OpenMP. Performance is decent but limited by nested loops; only one loop is vectorized. Future `cblas_sgemm` use could improve this.
-- **FCC**: Modularized computation returns coefficient arrays, optimized with BLAS and OpenMP. Visualization is decoupled, improving flexibility but requiring separate plotting calls.
-- **Scalability**: OpenMP parallelization scales well on multi-core systems, though Librosa remains faster for unknown reasons.
+- **MP3 Decoding & PNG Saving**: fast compred to  Python. minimp3 and libpng just show up, do their job, and leave..
+
+- **STFT & Mel Spectrogram**: Still slower than Librosa — even with FFTW wisdom caching and OpenMP. Not sure why. Librosa somehow still beats it. The Mel spectrogram part was especially disappointing: I tried to make it fast with BLAS, but the output came out wrong. Only one loop could be vectorized — the other two just sat there, immune to optimization. The filter bank creation is clean, but the actual dot-product part still suffers under that cursed 2-level nested loop ( I could eliminate 1 loop via BALS though, kinda win ig).
+
+- **Scalability**: OpenMP does help  not so much , very much usable until you compare the core DSP to librosa
 
 ## Requirements
 
@@ -129,14 +139,15 @@ Choose a build target:
   make opencv_like
   ```
 
+
 The build creates executables in `build/builtin` or `build/opencv` and generates FFTW wisdom files in `cache/FFT` (e.g., `1024.wisdom`).
 
 ## Usage
 
 ### Command-Line Interface
-Run the `main` program to process an audio file and generate STFT, filter bank spectrogram, and FCC visualizations:
+Run the `main` program to process an audio file and generate STFT, Mel spectrogram, and MFCC visualizations:
 ```bash
-./build/builtin/main <input_file> <output_prefix> <window_size> <hop_size> <window_type> <num_filters> <min_freq> <max_freq> <num_coff> <cs_stft> <cs_mel> <cs_mfcc> <cache_folder>
+./build/builtin/main <input_file> <output_prefix> <window_size> <hop_size> <window_type> <num_mel_banks> <min_mel> <max_mel> <num_mfcc_coeffs> <cs_stft> <cs_mel> <cs_mfcc> <cache_folder>
 ```
 
 **Parameters**:
@@ -144,10 +155,10 @@ Run the `main` program to process an audio file and generate STFT, filter bank s
 - `output_prefix`: Prefix for output PNG files (e.g., `outputs/black_woodpecker`).
 - `window_size`: STFT window size (e.g., 2048).
 - `hop_size`: Hop size for STFT (e.g., 512).
-- `window_type`: Window function (e.g., `hann`, `hamming`, `blackman`, `bartlett`, `blackman-harris`, `flattop`, `gaussian`, `kaiser`).
-- `num_filters`: Number of filter banks (e.g., 40).
-- `min_freq`, `max_freq`: Frequency range for filter banks (e.g., 20.0, 8000.0).
-- `num_coff`: Number of FCC coefficients (e.g., 13).
+- `window_type`: Window function (e.g., `hann`, `hamming`, `blackman`).
+- `num_mel_banks`: Number of Mel filters (e.g., 40).
+- `min_mel`, `max_mel`: Frequency range for Mel filters (e.g., 20.0, 8000.0).
+- `num_mfcc_coeffs`: Number of MFCC coefficients (e.g., 13).
 - `cs_stft`, `cs_mel`, `cs_mfcc`: Color scheme indices (e.g., 0 for default, see `output/colors.json`).
 - `cache_folder`: Directory for FFTW wisdom files (e.g., `cache/FFT`).
 
@@ -158,10 +169,10 @@ Run the `main` program to process an audio file and generate STFT, filter bank s
 
 **Output**:
 - PNG files: `outputs/black_woodpecker_stft.png`, `outputs/black_woodpecker_mel.png`, `outputs/black_woodpecker_mfcc.png`.
-- Console output: Audio metadata (duration, sample rate), bounds information, and ranked benchmark timings.
+- Console output: Audio metadata (duration, sample rate) and ranked benchmark timings.
 
 ### Programmatic Usage
-Below is an updated example reflecting the new `main.c` and upgraded functions:
+Below is a simplified example of using the library in C:
 
 ```c
 #include "headers/audio_tools/audio_io.h"
@@ -183,14 +194,14 @@ int main() {
     fft_d fft = init_fftw_plan(window_size, "cache/FFT");
     stft_d result = stft(&audio, window_size, hop_size, window_values, &fft);
 
-    // Compute filter bank (Mel)
+    // Compute Mel filter bank
     size_t num_filters = 40;
-    float *filterbank = calloc((result.num_frequencies + 1) * (num_filters + 2), sizeof(float));
-    filter_bank_t bank = gen_filterbank(F_MEL, 20.0f, 8000.0f, num_filters, audio.sample_rate, window_size, filterbank);
+    float *mel_filter_bank = calloc((result.num_frequencies + 1) * (num_filters + 2), sizeof(float));
+    melbank_t melbank = mel_filter(20.0f, 8000.0f, num_filters, audio.sample_rate, window_size, mel_filter_bank);
 
-    // Compute FCC
-    size_t num_coff = 13;
-    dct_t dft_coff = gen_cosine_coeffs(num_filters, num_coff);
+    // Compute MFCC
+    size_t num_coeffs = 13;
+    mffc_t dft_coeffs = precompute_cosine_coeffs(num_filters, num_coeffs);
 
     // Set visualization bounds
     bounds2d_t bounds = { .freq = {20.0f, 8000.0f} };
@@ -198,60 +209,81 @@ int main() {
     set_limits(&bounds, result.num_frequencies, result.output_size);
 
     // Copy STFT magnitudes
-    float *cont_mem = malloc((bounds.freq.end_d - bounds.freq.start_d) * (bounds.time.end_d - bounds.time.start_d) * sizeof(float));
-    copy_data(cont_mem, result.magnitudes, &bounds, result.num_frequencies);
+    float *contiguous_mem = malloc((bounds.freq.end_d - bounds.freq.start_d) * (bounds.time.end_d - bounds.time.start_d) * sizeof(float));
+    fast_copy(contiguous_mem, result.magnitudes, &bounds, result.num_frequencies);
 
     // Visualize STFT spectrogram
-    plot_t settings = { .db = true, .cs_enum = CS_Blues, .output_file = "outputs/stft.png", .w = bounds.time.end_d - bounds.time.start_d, .h = bounds.freq.end_d - bounds.freq.start_d };
+    plot_t settings = { .db = true, .cs_enum = CS_Blues, .output_file = "outputs/stft.png" };
     settings.bg_color[0] = 0; settings.bg_color[1] = 0; settings.bg_color[2] = 0; settings.bg_color[3] = 255;
-    plot(cont_mem, &bounds, &settings);
+    spectrogram(contiguous_mem, &bounds, &settings);
 
-    // Compute and visualize filter bank spectrogram
+    // Compute and visualize Mel spectrogram
     settings.output_file = "outputs/mel.png";
-    settings.h = num_filters;
-    float *mel_values = apply_filter_bank(cont_mem, num_filters, result.num_frequencies, filterbank, &bounds, &settings);
-    plot(mel_values, &bounds, &settings);
+    float *mel_values = mel_spectrogram(contiguous_mem, num_filters, result.num_frequencies, mel_filter_bank, &bounds, &settings);
 
-    // Compute and visualize FCC
+    // Compute and visualize MFCC
     settings.output_file = "outputs/mfcc.png";
-    settings.h = num_coff;
-    float *fcc_values = FCC(mel_values, &dft_coff, &bounds, &settings);
-    plot(fcc_values, &bounds, &settings);
+    mfcc(mel_values, &dft_coeffs, &bounds, &settings);
 
     // Print benchmark results
     print_bench_ranked();
 
     // Cleanup
     free(mel_values);
-    free(fcc_values);
-    free(filterbank);
-    free(cont_mem);
+    free(mel_filter_bank);
+    free(contiguous_mem);
     free(window_values);
     free_stft(&result);
-    free_fft_plan(&fft);
+    free_fft(&fft);
     free_audio(&audio);
-    free(dft_coff.coeffs);
-    free(bank.freq_indexs);
-    free(bank.weights);
+    free(dft_coeffs.coeffs);
+    free(melbank.freq_indexs);
+    free(melbank.weights);
     return 0;
 }
 ```
 
+
 ## 📊 Full Function Visualizations
 
-Below are visualizations produced by the pipeline for a single audio input (`black_woodpecker.wav`), using various color schemes and stages of the DSP pipeline: STFT, Filter Bank Spectrogram, and FCC.
+Below are visualizations produced by the pipeline for a single audio input (`black_woodpecker.wav`), using various color schemes and stages of the DSP pipeline: STFT, Mel Spectrogram, and MFCC.
 
 ---
 
 ### 🎛️ Function Outputs
 
-Visualizations generated using a 2048-point FFT, 128-sample hop size, and **Cividis** colormap.
+# 🎧 Filter Bank & FCC Visualizations
 
-| Output Type         | Description                                      | Preview |
-|---------------------|--------------------------------------------------|---------|
-| **STFT Spectrogram**| Raw Short-Time Fourier Transform magnitudes      | ![STFT Cividis](outputs/functions/bird_stft.png) |
-| **Filter Bank Spectrogram** | Filter bank output (256 filters, Mel scale) | ![Filter Bank Spectrogram](outputs/functions/bird_mel.png) |
-| **FCC**            | 128-dimensional Feature Cepstral Coefficients   | ![FCC](outputs/functions/bird_mfcc.png) |
+Visualizations generated using a **2048-point FFT**, **128-sample hop size**, and the specified color schemes.
+
+| Output Type              | Description                                                | Colormap Used | Preview |
+|--------------------------|------------------------------------------------------------|----------------|---------|
+| **STFT Spectrogram**     | Raw Short-Time Fourier Transform magnitudes                | Inferno        | ![STFT](outputs/functions/bird_stft.png) |
+| **Mel Filterbank**       | 256-filter Mel-scale spectrogram                           | Viridis        | ![Mel](outputs/functions/bird_mel.png) |
+| **MFCC**                 | 128 Mel-Frequency Cepstral Coefficients                    | Rainbow        | ![MFCC](outputs/functions/bird_mfcc.png) |
+| **Bark Filterbank**      | Bark-scale filter spectrogram                              | Plasma         | ![Bark](outputs/functions/bird_BARK.png) |
+| **BFCC**                 | Bark-scale Frequency Cepstral Coefficients                 | Rainbow        | ![BFCC](outputs/functions/bird_BFCC.png) |
+| **ERB Filterbank**       | Equivalent Rectangular Bandwidth filter spectrogram        | Magma          | ![ERB](outputs/functions/bird_ERB.png) |
+| **ERB-FCC**              | ERB-based Frequency Cepstral Coefficients                  | Rainbow        | ![ERB FCC](outputs/functions/bird_ERB_fcc.png) |
+| **CHIRP Filterbank**     | Chirp-scale filter spectrogram                             | Cividis        | ![Chirp](outputs/functions/bird_CHIRP.png) |
+| **CHIRP-FCC**            | Chirp-scale Frequency Cepstral Coefficients                | Rainbow        | ![Chirp FCC](outputs/functions/bird_CHIRP_fcc.png) |
+| **Cambridge ERB-Rate**   | Cochlear-inspired ERB-rate (Glasberg-Moore) visualization  | Turbo          | ![CAM](outputs/functions/bird_CAM.png) |
+| **Ranked Spectrum**      | Ranked/Sorted energy bins from filtered signal             | Spectral       | ![Ranked](outputs/functions/bird_ranked.png) |
+| **Input Signal**         | Raw or pre-filter STFT-like visualization                  | Greys          | ![Input](outputs/functions/bird_inputs.png) |
+
+---
+
+
+
+> **Input Settings**
+> **Window Size**: 2048  
+> **Hop Size**: 128  
+> **Window Type**: `hann`  
+> **Number of Filters**: 256  
+> **Min Frequency**: 0.00 Hz  
+> **Max Frequency**: 7500.00 Hz  
+> **Number of Coefficients**: 128
+
 
 ### 🐢 STFT Spectrograms (Built-in Color Schemes)
 
@@ -263,28 +295,35 @@ Visualizations generated using a 2048-point FFT, 128-sample hop size, and **Civi
 ---
 
 ### 🎨 STFT Spectrograms (OpenCV-like Color Schemes)
-*Colormaps generated via custom script using OpenCV reference gradients:*  
+ *Colormaps generated via custom script using OpenCV reference gradients:*  
 [`ref/opencv_like/colormap_gen.py`](https://github.com/8g6-new/CARA/blob/main/ref/opencv_like/colormap_gen.py)
 
 | Colormap        | Description                                       | Preview |
 |------------------|---------------------------------------------------|---------|
-| **Rainbow**      | A bright and cheerful spectrum of colors. | ![STFT Rainbow](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Rainbow.png) |
+| **Rainbow**      | A bright and cheerful spectrum of colors. | ![STFT Viridis](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Rainbow.png) |
 | **Jet**          | High-contrast legacy colormap                    | ![STFT Jet](outputs/colorschemes/opencv_like/images/black_woodpecker_stft_Jet.png) |
+
 
 To explore all available color schemes (e.g., Blues, Viridis, Jet, Inferno in discrete, mixed, mixed_exp, and soft variants), refer to the `README.MD` files in:
 - [`outputs/colorschemes/libheatmap_defaults/README.MD`](./outputs/colorschemes/libheatmap_defaults/README.MD) for built-in color schemes.
 - [`outputs/colorschemes/opencv_like/README.MD`](./outputs/colorschemes/opencv_like/README.MD) for OpenCV-like color schemes.
 
+These files include comprehensive galleries of all color schemes applied to `black_woodpecker.wav`.
+
 ## 🎨 Colormap Enum Reference
 All supported colormaps are listed in the file:
+
 ```bash
 output/colors.json
 ```
 This file maps human-readable names to internal enum IDs for both:
-- OpenCV-like colormaps (e.g., JET, VIRIDIS, HOT)
-- Built-in scientific colormaps (e.g., Blues.soft, Spectral.mixed_exp)
 
-Refer to [`outputs/README.MD`](./outputs/README.MD) for details.
+OpenCV-like colormaps (e.g., JET, VIRIDIS, HOT)
+
+Built-in scientific colormaps (e.g., Blues.soft, Spectral.mixed_exp)
+
+Refer [`outputs/README.MD`](./outputs/README.MD)
+
 
 ## Output Directory Structure
 The `outputs` directory contains:
@@ -294,7 +333,7 @@ The `outputs` directory contains:
   - `mixed_exp`: Exponentially scaled colors (e.g., `black_woodpecker_stft_Blues_mixed_exp.png`).
   - `soft`: Softened gradients (e.g., `black_woodpecker_stft_Blues_soft.png`).
 - `colorschemes/opencv_like/images`: OpenCV-inspired colormaps (e.g., `black_woodpecker_stft_Viridis.png`).
-- `functions`: Filter bank spectrograms and FCC heatmaps (e.g., `black_woodpecker_mel.png`, `black_woodpecker_mfcc.png`).
+- `functions`: Mel spectrograms and MFCC heatmaps (e.g., `black_woodpecker_mel.png`, `black_woodpecker_mfcc.png`).
 
 ## Benchmarking Output
 The `print_bench_ranked` function generates a ranked table of execution times:
@@ -302,18 +341,29 @@ The `print_bench_ranked` function generates a ranked table of execution times:
 - Visual: Color-coded bars for quick bottleneck identification.
 
 **Example**:
-For the command:
-```bash
-./build/opencv_like ./tests/files/black_woodpecker.wav bird 2048 128 hann 256 0 7500 128 16 16 16 ./cache/FFT
-```
-Or simply:
-```bash
-make run
-```
-**Output**: Visualizations with Cividis (opencv_like, color 16) or BuPu-discrete (builtin, color 16) colormaps, plus benchmark timings:
-![Benchmark Result](outputs/functions/example_output.png)
 
-*Note*: Filter bank computation is slower due to `heatmap_add_weighted_point` calls in `libheatmap`. Separating computation and visualization (as done in the new `apply_filter_bank` and `FCC`) improves modularity but doesn’t yet address this bottleneck. Benchmarked on AMD Ryzen 5 4600H CPU.
+### 🔍 Sample Benchmark Output
+
+For this input 
+
+```bash
+./opencv_like "./tests/files/black_woodpecker.wav" bird 2048 128 hann 256 0 7500 128 16 16 16 "./cache/FFT" 
+```
+
+or use can simply use after building either opencv_like (Color 16 will be [Cividis](outputs/functions/bird_stft.png)) or builtin (Color 16 will be [`BuPu - discrete`](outputs/colorschemes/libheatmap_defaults/discrete/black_woodpecker_stft_BuPu_discrete.png))
+
+```bash
+make run 
+```
+
+This will be the ouput with bechmarks 
+
+![info](outputs/functions/inputs.png)
+![bechmarks](outputs/functions/ranked.png)
+
+Mel looks significantly slower because it calls additional weighted points from the libheatmap lib, which adds delay, doing 2 separate loops was found to be even slower
+> **Note** : bechmarked in AMD Ryzen 5 4600H CPU
+
 
 ## Project Structure
 
@@ -321,12 +371,12 @@ make run
 .
 ├── cache/FFT/              # FFTW wisdom files for optimized FFT plans
 ├── headers/                # Header files for audio tools, heatmap, and utilities
-├── outputs/                # Generated spectrograms, filter bank spectrograms, and FCC heatmaps
+├── outputs/                # Generated spectrograms, Mel spectrograms, and MFCC heatmaps
 ├── src/                    # Source code for audio processing, visualization, and utilities
 │   ├── libheatmap/         # Heatmap visualization code
 │   ├── png_tools/          # PNG output utilities
 │   ├── utils/              # Benchmarking and utility functions
-│   ├── audio_tools/        # Audio I/O, STFT, filter bank, and FCC computation
+│   ├── audio_tools/        # Audio I/O, STFT, Mel, and MFCC computation
 ├── tests/files/            # Test audio files (e.g., black_woodpecker.wav, bird.mp3)
 ├── main.c                  # Main program for testing the pipeline
 ├── Makefile                # Build configuration
@@ -335,23 +385,23 @@ make run
 
 ## Performance Optimization Tips
 
-- **BLAS**: Use optimized BLAS (e.g., [OpenBLAS](https://www.openblas.net/)) for faster filter bank and FCC computations. Consider `cblas_sgemm` for batched operations in `apply_filter_bank` and `FCC`.
+- **BLAS**: Use optimized BLAS (e.g., [OpenBLAS](https://www.openblas.net/)) for faster Mel and MFCC computations.
 - **Wisdom Caching**: Pre-generate FFTW wisdom files for common window sizes.
-- **SIMD**: Leverage explicit SSE, SSE2, or AVX instructions for STFT and filter bank loops, beyond current compiler optimizations.
-- **GPU**: Pipeline is GPU-ready for STFT ([cuFFT](https://developer.nvidia.com/cufft)), filter banks ([cuBLAS](https://developer.nvidia.com/cublas)), and visualization (CUDA kernels).
-- **Fast Math**: Test `-ffast-math` carefully, as it may introduce numerical inaccuracies in filter bank calculations.
+- **Matrix Operations**: Replace `cblas_sdot` with `cblas_sgemm` for batched matrix multiplications in `mel_spectrogram` and `mfcc`.
+- **Fast Math**: Test `-ffast-math` for numerical stability, as it may introduce inaccuracies.
+- **GPU**: Pipeline is GPU-ready for STFT ([cuFFT](https://developer.nvidia.com/cufft)), Mel spectrograms ([cuBLAS](https://developer.nvidia.com/cublas)), and visualization (CUDA kernels).
 
 ## Future Work
 
-- **Explicit SIMD Support**: Implement SSE, SSE2, AVX, or AVX2 for STFT, filter bank, and FCC computations.
-- **GPU Acceleration**: Use [cuFFT](https://developer.nvidia.com/cufft) and [cuBLAS](https://developer.nvidia.com/cublas) for Librosa-like performance.
-- **Sparse Matrix Operations**: Apply CSR format for filter banks to reduce memory and computation.
+- **Explicit SIMD Support**: Implement explicit SIMD optimizations (e.g., SSE, SSE2, AVX, AVX2) for STFT, Mel spectrogram, and MFCC computations, beyond current implicit support via `minimp3` and compiler flags.
+- **GPU Acceleration**: Implement CUDA-based STFT ([cuFFT](https://developer.nvidia.com/cufft)), Mel spectrograms ([cuBLAS](https://developer.nvidia.com/cublas)), and visualization for Librosa-like performance.
+- **Sparse Matrix Operations**: Use CSR format for Mel filter banks to reduce memory and computation.
 - **Real-Time Processing**: Support streaming audio analysis.
 - **Enhanced Benchmarking**: Add memory usage and CPU/GPU utilization metrics to `bench.h`.
-- **Custom Heatmap**: Replace `heatmap_add_weighted_point` in `libheatmap` with a faster custom renderer.
-- **Memory Pooling**: Implement a memory arena to optimize allocation and prevent use-after-free issues.
-- **Advanced Memory Management**: Use buddy allocators to reduce fragmentation.
-- **Documentation**: Expand API docs and usage examples in `headers/` and `README.md`.
+- **Simple Heatmap**: Replace `heatmap_add_weighted_point()` in `libheatmap` with a custom heatmap generator for faster rendering.
+- **Memory Pooling**: Implement memory pooling using a memory arena to improve utilization and prevent issues like use-after-free.
+- **Advanced Memory Management**: Integrate buddy allocators or other techniques to optimize memory allocation and reduce fragmentation.
+- **Documentation**: Add detailed API docs and usage examples to `headers/` and `README.md`.
 
 ## 📄 License
 
