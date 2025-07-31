@@ -175,70 +175,95 @@ Run the `main` program to process an audio file and generate STFT, Mel spectrogr
 Below is a simplified example of using the library in C:
 
 ```c
-#include "headers/audio_tools/audio_io.h"
-#include "headers/audio_tools/spectral_features.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "headers/audio_tools/audio_visualizer.h"
-#include "headers/utils/bench.h"
 
 int main() {
-    benchmark_init(); // Initialize benchmarking
-
-    // Load audio
+    // --- Step 1: Load Audio ---
     audio_data audio = auto_detect("tests/files/black_woodpecker.wav");
-    print_ad(&audio);
 
-    // Compute STFT
-    size_t window_size = 2048, hop_size = 512;
+    if (!audio.samples) {
+        fprintf(stderr, "Failed to load audio.\n");
+        return 1;
+    }
+
+    // --- Step 2: Parameters ---
+    int window_size = 2048;
+    int hop_size = 512;
+    const char *window_type = "hann";
+    int num_filters = 40;
+    float min_freq = 20.0f, max_freq = 8000.0f;
+    int num_coff = 13;
+
+    // --- Step 3: Precompute ---
     float *window_values = malloc(window_size * sizeof(float));
-    window_function(window_values, window_size, "hann");
+    window_function(window_values, window_size, window_type);
+
     fft_d fft = init_fftw_plan(window_size, "cache/FFT");
     stft_d result = stft(&audio, window_size, hop_size, window_values, &fft);
 
-    // Compute Mel filter bank
-    size_t num_filters = 40;
-    float *mel_filter_bank = calloc((result.num_frequencies + 1) * (num_filters + 2), sizeof(float));
-    melbank_t melbank = mel_filter(20.0f, 8000.0f, num_filters, audio.sample_rate, window_size, mel_filter_bank);
+    float *filterbank = calloc((result.num_frequencies + 1) * (num_filters + 2), sizeof(float));
+    filter_bank_t bank = gen_filterbank(F_MEL, min_freq, max_freq, num_filters,
+                                        audio.sample_rate, window_size, filterbank);
 
-    // Compute MFCC
-    size_t num_coeffs = 13;
-    mffc_t dft_coeffs = precompute_cosine_coeffs(num_filters, num_coeffs);
+    dct_t dct = gen_cosine_coeffs(num_filters, num_coff);
 
-    // Set visualization bounds
-    bounds2d_t bounds = { .freq = {20.0f, 8000.0f} };
+    // --- Step 4: Visualization Setup ---
+    plot_t settings = {
+        .cs_enum = Viridis,  // or enum any other built-in colormap 
+        .db = true,
+        .output_file = "outputs/stft.png",
+        .bg_color = {0, 0, 0, 255}
+    };
+
+    bounds2d_t bounds = {0};
     init_bounds(&bounds, &result);
     set_limits(&bounds, result.num_frequencies, result.output_size);
 
-    // Copy STFT magnitudes
-    float *contiguous_mem = malloc((bounds.freq.end_d - bounds.freq.start_d) * (bounds.time.end_d - bounds.time.start_d) * sizeof(float));
-    fast_copy(contiguous_mem, result.magnitudes, &bounds, result.num_frequencies);
+    int t_len = bounds.time.end_d - bounds.time.start_d;
+    int f_len = bounds.freq.end_d - bounds.freq.start_d;
 
-    // Visualize STFT spectrogram
-    plot_t settings = { .db = true, .cs_enum = CS_Blues, .output_file = "outputs/stft.png" };
-    settings.bg_color[0] = 0; settings.bg_color[1] = 0; settings.bg_color[2] = 0; settings.bg_color[3] = 255;
-    spectrogram(contiguous_mem, &bounds, &settings);
+    float *cont_mem = malloc(t_len * f_len * sizeof(float));
+    fast_copy(cont_mem, result.magnitudes, &bounds, result.num_frequencies);
 
-    // Compute and visualize Mel spectrogram
-    settings.output_file = "outputs/mel.png";
-    float *mel_values = mel_spectrogram(contiguous_mem, num_filters, result.num_frequencies, mel_filter_bank, &bounds, &settings);
+    // --- Step 5: STFT Plot ---
+    settings.h = f_len;
+    settings.w = t_len;
+    strcpy(settings.output_file, "outputs/stft.png");
+    plot(cont_mem, &bounds, &settings);
 
-    // Compute and visualize MFCC
-    settings.output_file = "outputs/mfcc.png";
-    mfcc(mel_values, &dft_coeffs, &bounds, &settings);
+    // --- Step 6: Mel Filter Bank Spectrogram ---
+    float *mel_values = apply_filter_bank(cont_mem, num_filters, result.num_frequencies,
+                                          filterbank, &bounds, &settings);
 
-    // Print benchmark results
-    print_bench_ranked();
+    settings.h = num_filters;
+    strcpy(settings.output_file, "outputs/mel.png");
+    plot(mel_values, &bounds, &settings);
 
-    // Cleanup
-    free(mel_values);
-    free(mel_filter_bank);
-    free(contiguous_mem);
+    // --- Step 7: FCC / MFCC ---
+    float *fcc_values = FCC(mel_values, &dct, &bounds, &settings);
+
+    settings.h = num_coff;
+    strcpy(settings.output_file, "outputs/mfcc.png");
+    plot(fcc_values, &bounds, &settings);
+
+    // --- Step 8: Cleanup ---
     free(window_values);
+    free(filterbank);
+    free(mel_values);
+    free(fcc_values);
+    free(cont_mem);
+    free_fft_plan(&fft);
     free_stft(&result);
-    free_fft(&fft);
     free_audio(&audio);
-    free(dft_coeffs.coeffs);
-    free(melbank.freq_indexs);
-    free(melbank.weights);
+    free(dct.coeffs);
+    free(bank.freq_indexs);
+    free(bank.weights);
+
+    printf("Done. Output saved to outputs/ directory.\n");
     return 0;
 }
 ```
@@ -268,8 +293,6 @@ Visualizations generated using a **2048-point FFT**, **128-sample hop size**, an
 | **CHIRP Filterbank**     | Chirp-scale filter spectrogram                             | Cividis        | ![Chirp](outputs/functions/CHIRP.png) |
 | **CHIRP-FCC**            | Chirp-scale Frequency Cepstral Coefficients                | Rainbow        | ![Chirp FCC](outputs/functions/CHIRP_fcc.png) |
 | **Cambridge ERB-Rate**   | Cochlear-inspired ERB-rate (Glasberg-Moore) visualization  | Turbo          | ![CAM](outputs/functions/CAM.png) |
-| **Ranked Spectrum**      | Ranked/Sorted energy bins from filtered signal             | Spectral       | ![Ranked](outputs/functions/ranked.png) |
-| **Input Signal**         | Raw or pre-filter STFT-like visualization                  | Greys          | ![Input](outputs/functions/inputs.png) |
 
 ---
 
