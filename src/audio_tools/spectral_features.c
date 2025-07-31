@@ -25,6 +25,22 @@
  * SOFTWARE.
  */
 
+
+ /**
+ * @brief Zeroth order modified Bessel function of the first kind (I₀)
+ */
+static double bessel_i0(double x) {
+    double sum = 1.0;
+    double y = x * x / 4.0;
+    double term = y;
+    int k = 1;
+    while (term > 1e-10 * sum) {
+        sum += term;
+        k++;
+        term *= y / (k * k);
+    }
+    return sum;
+}
  
 
 
@@ -38,7 +54,7 @@ bool is_power_of_two(size_t x) {
 
 void *aligned_alloc_batch(size_t batch, size_t count, bool zero_init) {
     if (!is_power_of_two(batch)) {
-        fprintf(stderr, "Error: alignment (%zu) must be a power of two.\n", batch);
+        ERROR("Alignment (%zu) must be a power of two.", batch);
         return NULL;
     }
 
@@ -46,7 +62,7 @@ void *aligned_alloc_batch(size_t batch, size_t count, bool zero_init) {
     void *ptr         = aligned_alloc(batch, total_size);
 
     if (!ptr) {
-        fprintf(stderr, "Error: aligned_alloc failed for size %zu with alignment %zu.\n", total_size, batch);
+        ERROR("aligned_alloc failed for size %zu with alignment %zu.", total_size, batch);
         return NULL;
     }
 
@@ -102,11 +118,11 @@ void free_stft(stft_d *result) {
 
 bool init_fft_output(stft_d *result, unsigned int window_size, unsigned int hop_size, unsigned int num_samples) {
 
-    if(hop_size==0)
-    fprintf(stderr, "Hop size should be >= 0");
+    if (hop_size == 0)
+        WARN("Hop size should be >= 0");
 
-    if(window_size==0)
-    fprintf(stderr, "window_size >= 0");
+    if (window_size == 0)
+        WARN("Window size should be >= 0");
 
     if (!result) return false;
 
@@ -128,15 +144,27 @@ bool init_fft_output(stft_d *result, unsigned int window_size, unsigned int hop_
     return true;
 }
 
-inline  double hz_to_mel(double f, float mid_f) {
-    return mid_f * log10(1 + f / 700.0);
-}
 
-inline  double mel_to_hz(double m, float mid_f) {
-    return 700.0 * (pow(10, m / mid_f) - 1);
-}
+double hz_to_mel(double hz)       { return 2595.0 * log10(1.0 + hz / 700.0); }
+double mel_to_hz(double mel)      { return 700.0 * (pow(10.0, mel / 2595.0) - 1.0); }
 
-void print_melbank(const melbank_t *v) {
+double hz_to_bark(double hz)      { return 6.0 * asinh(hz / 600.0); }
+double bark_to_hz(double bark)    { return 600.0 * sinh(bark / 6.0); }
+
+double hz_to_erb(double hz)       { return 21.4 * log10(4.37e-3 * hz + 1.0); }
+double erb_to_hz(double erb)      { return (pow(10.0, erb / 21.4) - 1.0) / 4.37e-3; }
+
+double hz_to_chirp(double hz)     { return log2(hz + 1.0); }
+double chirp_to_hz(double chirp)  { return pow(2.0, chirp) - 1.0; }
+
+double hz_to_cam(double hz)       { return 45.5 * log10(1.0 + hz / 700.0); }
+double cam_to_hz(double cam)      { return 700.0 * (pow(10.0, cam / 45.5) - 1.0); }
+
+double hz_to_log10(double hz)     { return log10(hz + 1.0); }
+double log10_to_hz(double val)    { return pow(10.0, val) - 1.0; }
+
+
+void print_melbank(const filter_bank_t *v) {
     if (!v || !v->weights || v->size == 0) {
         printf("melbank is empty or NULL.\n");
         return;
@@ -149,54 +177,74 @@ void print_melbank(const melbank_t *v) {
 }
 
 
-melbank_t mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_t fft_size, float *filter) {
-
-    melbank_t non_zero      = { .freq_indexs = NULL, .weights = NULL, .size = 0 ,.num_filters=n_filters };
-   
-    const size_t avg_length = n_filters * (fft_size*3/512);
-    non_zero.freq_indexs    = malloc( avg_length * sizeof(size_t));
-    non_zero.weights        = malloc( avg_length * sizeof(float));
-
-
+filter_bank_t gen_filterbank(filter_type_t type,
+                             float min_f, float max_f,
+                             size_t n_filters, float sr,
+                             size_t fft_size, float *filter) {
     
-    size_t num_f            = (fft_size / 2);
-    float mel_mid           = 2595.0f;
-    float mel_min           = hz_to_mel(min_f, mel_mid);
-    float mel_max           = hz_to_mel(max_f, mel_mid);
-    float mel_step          = (mel_max - mel_min) / (n_filters + 1);
-    
-    float freq_bins[n_filters + 2];
+    filter_bank_t non_zero = {
+        .freq_indexs = NULL,
+        .weights     = NULL,
+        .size        = 0,
+        .num_filters = n_filters
+    };
 
-    float mel,hz;
+    const size_t num_f     = fft_size / 2;
+    const size_t avg_len   = n_filters * (fft_size * 3 / 512);
+    non_zero.freq_indexs   = malloc(avg_len * sizeof(size_t));
+    non_zero.weights       = malloc(avg_len * sizeof(float));
     
+    double (*hz_to_scale)(double) = NULL;
+    double (*scale_to_hz)(double) = NULL;
+
+    switch (type) {
+        case F_MEL:     hz_to_scale = hz_to_mel;     scale_to_hz = mel_to_hz; break;
+        case F_BARK:    hz_to_scale = hz_to_bark;    scale_to_hz = bark_to_hz; break;
+        case F_ERB:     hz_to_scale = hz_to_erb;     scale_to_hz = erb_to_hz; break;
+        case F_CHIRP:   hz_to_scale = hz_to_chirp;   scale_to_hz = chirp_to_hz; break;
+        case F_CAM:     hz_to_scale = hz_to_cam;     scale_to_hz = cam_to_hz; break;
+        case F_LOG10:   hz_to_scale = hz_to_log10;   scale_to_hz = log10_to_hz; break;
+        default:
+            ERROR("Unknown filterbank type enum: %d", type);
+            return non_zero;
+    }
+
+    double scale_min = hz_to_scale((double)min_f);
+    double scale_max = hz_to_scale((double)max_f);
+    double step      = (scale_max - scale_min) / (double)(n_filters + 1);
+
+    double bin_edges[n_filters + 2];
+
     for (size_t i = 0; i < n_filters + 2; i++) {
-        mel          = mel_min + (mel_step * i);
-        hz           = mel_to_hz(mel,mel_mid);
-        freq_bins[i] = hz * (float)(num_f) / (sr / 2);
+        double scale = scale_min + step * (double)i;
+        double hz    = scale_to_hz(scale);
+        bin_edges[i] = hz * (double)(num_f) / (sr / 2.0);
     }
 
     for (size_t m = 1; m <= n_filters; m++) {
-        float left   = freq_bins[m - 1];
-        float center = freq_bins[m];
-        float right  = freq_bins[m + 1];
-        
-        int k_start = (int)floorf(left);
-        int k_end   = (int)ceilf(right);
+        double left   = bin_edges[m - 1];
+        double center = bin_edges[m];
+        double right  = bin_edges[m + 1];
 
-        for (int k = k_start; k <= k_end; k++) {  
-            if (k < 0 || k >= num_f) continue;
-            
-            if (left <= k && k < center) {
-                non_zero.weights[non_zero.size]     = (k - left) / (center - left);
-                filter[(m - 1) * num_f + k]         =  non_zero.weights[non_zero.size];
-                non_zero.freq_indexs[non_zero.size] = k;
-                non_zero.size++;
-            } else if (center <= k && k <= right) {
-                non_zero.weights[non_zero.size]     = (right - k) / (right - center);
-                filter[(m - 1) * num_f + k]         =  non_zero.weights[non_zero.size];
-                non_zero.freq_indexs[non_zero.size] = k;
-                non_zero.size++;
+        int k_start = (int)floor(left);
+        int k_end   = (int)ceil(right);
+
+        for (int k = k_start; k <= k_end; k++) {
+            if (k < 0 || k >= (int)num_f) continue;
+
+            double weight = 0.0;
+            if (k < center) {
+                weight = (k - left) / (center - left);
+            } else if (k <= right) {
+                weight = (right - k) / (right - center);
+            } else {
+                continue;
             }
+
+            non_zero.weights[non_zero.size]     = (float)weight;
+            filter[(m - 1) * num_f + k]         = (float)weight;
+            non_zero.freq_indexs[non_zero.size] = k;
+            non_zero.size++;
         }
     }
 
@@ -204,58 +252,80 @@ melbank_t mel_filter(float min_f, float max_f, size_t n_filters, float sr, size_
     non_zero.weights     = realloc(non_zero.weights,     non_zero.size * sizeof(float));
 
     return non_zero;
-
 }
 
+
+/**
+ * @brief Generate window coefficients
+ *
+ * @param window_values Pointer to pre-allocated array of size `window_size`
+ * @param window_size Length of the window
+ * @param window_type Name of the window (e.g., "hann", "kaiser")
+ */
 void window_function(float *window_values, size_t window_size, const char *window_type) {
+    const double N = (double)window_size;
+
     if (strcmp(window_type, "hann") == 0) {
-        for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = 0.5 * (1 - cos(2 * M_PI * i / (window_size - 1)));
-        }
+        for (size_t i = 0; i < window_size; i++)
+            window_values[i] = 0.5f * (1.0f - cosf(2.0f * M_PI * i / (N - 1.0f)));
+
     } else if (strcmp(window_type, "hamming") == 0) {
-        for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = 0.54 - 0.46 * cos(2 * M_PI * i / (window_size - 1));
-        }
+        for (size_t i = 0; i < window_size; i++)
+            window_values[i] = 0.54f - 0.46f * cosf(2.0f * M_PI * i / (N - 1.0f));
+
     } else if (strcmp(window_type, "blackman") == 0) {
         for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = 0.42 - 0.5 * cos(2 * M_PI * i / (window_size - 1)) + 0.08 * cos(4 * M_PI * i / (window_size - 1));
+            double a0 = 0.42, a1 = 0.5, a2 = 0.08;
+            double phase = 2.0 * M_PI * i / (N - 1.0);
+            window_values[i] = a0 - a1 * cos(phase) + a2 * cos(2.0 * phase);
         }
-    } else if (strcmp(window_type, "bartlett") == 0) {
-        for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = 1.0 - fabs((i - (window_size - 1) / 2.0) / ((window_size - 1) / 2.0));
-        }
+
     } else if (strcmp(window_type, "blackman-harris") == 0) {
         for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = 0.35875 - 0.48829 * cos(2 * M_PI * i / (window_size - 1)) + 
-                               0.14128 * cos(4 * M_PI * i / (window_size - 1)) - 
-                               0.01168 * cos(6 * M_PI * i / (window_size - 1));
+            double phase = 2.0 * M_PI * i / (N - 1.0);
+            window_values[i] = 0.35875
+                             - 0.48829 * cos(phase)
+                             + 0.14128 * cos(2.0 * phase)
+                             - 0.01168 * cos(3.0 * phase);
         }
+
+    } else if (strcmp(window_type, "bartlett") == 0) {
+        for (size_t i = 0; i < window_size; i++)
+            window_values[i] = 1.0f - fabsf((float)(i - (N - 1.0) / 2.0) / ((N - 1.0) / 2.0));
+
     } else if (strcmp(window_type, "flattop") == 0) {
         for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = 1 - 1.93 * cos(2 * M_PI * i / (window_size - 1)) + 
-                                 1.29 * cos(4 * M_PI * i / (window_size - 1)) - 
-                                 0.388 * cos(6 * M_PI * i / (window_size - 1)) + 
-                                 0.032 * cos(8 * M_PI * i / (window_size - 1));
+            double phase = 2.0 * M_PI * i / (N - 1.0);
+            window_values[i] = 1.0
+                             - 1.93 * cos(phase)
+                             + 1.29 * cos(2.0 * phase)
+                             - 0.388 * cos(3.0 * phase)
+                             + 0.028 * cos(4.0 * phase);
         }
+
     } else if (strcmp(window_type, "gaussian") == 0) {
-        float sigma = 0.4;  // Standard deviation
+        double sigma = 0.4;
+        double denom = sigma * (N - 1.0) / 2.0;
         for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = exp(-0.5 * pow((i - (window_size - 1) / 2.0) / (sigma * (window_size - 1) / 2.0), 2));
+            double x = (i - (N - 1.0) / 2.0) / denom;
+            window_values[i] = exp(-0.5 * x * x);
         }
+
     } else if (strcmp(window_type, "kaiser") == 0) {
-        float alpha = 3.0;  // Shape parameter
-        float denominator = 1.0 / (tgamma(alpha + 1) * tgamma(1 - alpha));
+        double alpha = 3.0;  // Shape parameter, can be adjusted (typical: 3~8)
+        double denom = bessel_i0(alpha);
         for (size_t i = 0; i < window_size; i++) {
-            float ratio = (i - (window_size - 1) / 2.0) / ((window_size - 1) / 2.0);
-            window_values[i] = tgamma(alpha + 1) * tgamma(1 - alpha) * denominator * exp(alpha * sqrt(1 - ratio * ratio));
+            double ratio = 2.0 * i / (N - 1.0) - 1.0;
+            window_values[i] = (float)(bessel_i0(alpha * sqrt(1.0 - ratio * ratio)) / denom);
         }
+
     } else {
-        fprintf(stderr, "Unknown window type. Using rectangular window.\n");
-        for (size_t i = 0; i < window_size; i++) {
-            window_values[i] = 1.0;
-        }
+    WARN("Unknown window type: %s. Using rectangular window.", window_type);
+    for (size_t i = 0; i < window_size; i++)
+        window_values[i] = 1.0f;
     }
 }
+
 
 void calculate_frequencies(stft_d *result, size_t window_size, float sample_rate) {
     size_t half_window_size = window_size / 2;
@@ -356,12 +426,24 @@ stft_d stft(audio_data *audio, size_t window_size, size_t hop_size, float *windo
 
     memset(in, 0.0f, window_size * sizeof(fftwf_complex));
 
+    long long elp = 0;
+    long long temp = 0;
+
     for (size_t i = 0; i < output_size; i++) {
         const size_t start_idx = i * hop_size;
         for (size_t j = 0; j < window_size; j++) in[j][0] = mono[start_idx + j] * window_values[j];
+        temp = get_time_us();
         fftwf_execute(plan);
+        elp += (get_time_us() - temp);
         memcpy(&(result.phasers[i * window_size]), out,c_size);
     }
+
+    double avg_elp  = (double)elp/output_size;
+
+    printf("Avg time %f",avg_elp);
+
+
+    FFT_bench(avg_elp,window_size);
 
     free(mono);
 

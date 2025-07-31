@@ -20,6 +20,8 @@ int save_heatmap(heatmap_t **hm,char *output_file,size_t w,size_t h,unsigned cha
     free(image);
     heatmap_free(*hm);
     heatmap_colorscheme_free(scheme);
+
+    return 0;
 }
 
 

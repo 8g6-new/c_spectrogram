@@ -20,6 +20,7 @@ OPTFLAGS+=-fipa-cp#                 => Performs constant propagation across func
 OPTFLAGS+=-fipa-sra#                => Optimizes function arguments and return values for efficiency
 OPTFLAGS+=-fipa-icf#                => Merges identical functions to reduce code size
 
+
 #_______________________Says compiler to vectorize loops_________________________________________
 VECFLAGS+=-ftree-vectorize#         => Enables automatic vectorization of loops
 VECFLAGS+=-ftree-loop-vectorize#    => Enables loop-based vectorization
@@ -48,7 +49,7 @@ DBGFLAGS+=-fsanitize=undefined#     => Enables Undefined Behavior Sanitizer (UBS
 LIBFLAGS = -DMINIMP3_FLOAT_OUTPUT
 WARNFLAGS = -Wall -Wextra 
 
-CFLAGS = $(WARNFLAGS) $(OPTFLAGS) $(VECFLAGS) $(LIBFLAGS)
+CFLAGS = $(WARNFLAGS) $(OPTFLAGS) $(VECFLAGS) $(LIBFLAGS) -fopenmp
 CFLAGS_DEBUG = -g -O0 -DDEBUG
 LDFLAGS = -lm -lfftw3 -lfftw3f -lsndfile -lpng -fopenmp -lopenblas 
 
@@ -168,7 +169,7 @@ run:
 	  echo "Executable '$$LAST_TARGET' not found. Run 'make' first."; exit 1; \
 	fi; \
 	echo "Running $$LAST_TARGET..."; \
-	./$$LAST_TARGET "./tests/files/black_woodpecker.wav" bird 2048 128 hann 256 0 7500 128 16 16 16 "./cache/FFT"
+	./$$LAST_TARGET "./tests/files/black_woodpecker.wav" bird 2048 128 hann 256 0 7500 128 14 16 4 "./cache/FFT"
 
 clean:
 	rm -rf $(BUILDDIR)

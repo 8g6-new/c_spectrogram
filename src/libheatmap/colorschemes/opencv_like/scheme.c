@@ -40,10 +40,15 @@ const char *color_names[] = {
     "Twilight Shifted", "Turbo", "Deep Green"
 };
 
-char *fetch_color_opencv_like(cs_enum type,bool log){
-    if(log)
-        printf("enum %d  => Open CV Like color scheme : %s",type,color_names[type]);
-    return color_names[type];
+char *fetch_color_opencv_like(cs_enum type, bool log) {
+    const char *name = color_names[type];
+    if (log)
+        printf("enum %d  => Open CV Like color scheme : %s\n", type, name);
+
+    char *copy = malloc(strlen(name) + 1);
+    if (copy)
+        strcpy(copy, name);
+    return copy;
 }
 
 void print_all_cs() {

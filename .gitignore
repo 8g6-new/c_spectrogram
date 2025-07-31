@@ -1,6 +1,8 @@
 build
+cache/FFT/*.wisdom
+
 .last_target
-*.wisdom
+
 
 !/outputs/*
 !/tests
