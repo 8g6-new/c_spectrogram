@@ -43,26 +43,22 @@ If it helps others demystify the DSP pipeline or write their own from scratch, t
 
 ## Pipeline Overview
 
-The following diagram illustrates the audio processing and visualization pipeline:
-
 ```mermaid
 %%{init: {
   "theme": "base",
   "themeVariables": {
-    "primaryColor": "#1e1e1e",          %% Node background (very dark)
-    "primaryTextColor": "#ffffff",      %% Text color (white)
-    "primaryBorderColor": "#ffaa00",    %% Orange border for visibility
-    "clusterBkg": "#2a2a2a",            %% Subgraph background (dark gray)
-    "clusterBorder": "#ffaa00",         %% Subgraph border color
-    "lineColor": "#ffaa00",             %% Arrow color
+    "primaryColor": "#1e1e1e",
+    "primaryTextColor": "#ffffff",
+    "primaryBorderColor": "#ffaa00",
+    "clusterBkg": "#2a2a2a",
+    "clusterBorder": "#ffaa00",
+    "lineColor": "#ffaa00",
     "fontSize": "14px",
     "fontFamily": "monospace"
   }
 }}%%
 
 flowchart TD
-
-    %% Input and Decoding
     A["📥 Audio Input (.wav / .mp3)"] --> B["🔍 Auto File Type Detection"]
     B --> C{"🧩 Format Type"}
     C -->|MP3| D["🎧 Decode with minimp3"]
@@ -70,31 +66,35 @@ flowchart TD
     D --> F["🎚️ Normalize → Float32"]
     E --> F
 
-    %% Feature Extraction
     subgraph Feature Extraction
-        F --> G["🪟 Apply Window Function (e.g., Hann)"]
+        F --> G["🪟 Apply Window Function (e.g., hann)"]
         G --> H["⚡ STFT (FFTW + Wisdom)"]
         H --> I["📊 Extract Magnitudes & Phases"]
-        I --> J["🎚️ Apply Mel Filter Bank (BLAS)"]
-        J --> K["🎯 Compute MFCC (DCT)"]
+        I --> J["🎚️ Apply Generalized Filter Bank (BLAS)"]
+        J --> K["🎯 Compute FCC (DCT)"]
     end
 
-    %% Visualization
     subgraph Visualization
         H --> V1["🖼️ STFT Heatmap"]
-        J --> V2["🎨 Mel Spectrogram"]
-        K --> V3["🌡️ MFCC Heatmap"]
+        J --> V2["🎨 Filter Bank Spectrogram"]
+        K --> V3["🌡️ FCC Heatmap"]
     end
 
-    %% Benchmarking
     subgraph Benchmarking
         H --> B1["⏱️ Time STFT"]
-        J --> B2["⏱️ Time Mel Computation"]
-        K --> B3["⏱️ Time MFCC Extraction"]
+        J --> B2["⏱️ Time Filter Bank"]
+        K --> B3["⏱️ Time FCC"]
         V1 --> B4["⏱️ Time Plot Generation"]
     end
-
 ```
+
+## 🛠️ Recent Changes
+
+- **Generalized Filter Banks**: Added `gen_filterbank` in `spectral_features.h` to support Mel, Bark, ERB, Cam, Log10, and Cent scales, optimized with BLAS (`cblas_sdot`) and OpenMP for flexible audio analysis.
+- **Single Plot Function**: Consolidated visualization into a single `plot` function in `audio_visualizer.h`, supporting **130+ color schemes** (22 OpenCV-style, 108 scientific variants) for STFT, filter banks, and FCCs.
+- **Isolated Filter Application**: Decoupled filter application in `apply_filter_bank` for modularity, enhancing reusability for ML pipelines (e.g., TurboVAD) and maintainability.
+- **Performance**: Achieves 1.966 µs per frame (57.296 GFLOP/s) for STFT and 141.614 ms for FCC on a 58-second file.
+
 
 ## Performance Highlights
 
