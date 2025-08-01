@@ -315,20 +315,20 @@ Below are visualizations produced by the pipeline for a single audio input (`bla
 
 # 🎧 Filter Bank & FCC Visualizations
 
-Visualizations generated using a **2048-point FFT**, **128-sample hop size**, and the specified color schemes.
+Visualizations generated using a **2048-point FFT**, **128-sample hop size**, and the specified color schemes using **Inferno** color scheme.
 
-| Output Type              | Description                                                | Colormap Used | Preview |
+| Output Type              | Description                                               |  Preview |
 |--------------------------|------------------------------------------------------------|----------------|---------|
-| **STFT Spectrogram**     | Raw Short-Time Fourier Transform magnitudes                | Inferno        | ![STFT](outputs/functions/stft.png) |
-| **Mel Filterbank**       | 256-filter Mel-scale spectrogram                           | Viridis        | ![Mel](outputs/functions/mel.png) |
-| **MFCC**                 | 128 Mel-Frequency Cepstral Coefficients                    | Rainbow        | ![MFCC](outputs/functions/mfcc.png) |
-| **Bark Filterbank**      | Bark-scale filter spectrogram                              | Plasma         | ![Bark](outputs/functions/BARK.png) |
-| **BFCC**                 | Bark-scale Frequency Cepstral Coefficients                 | Rainbow        | ![BFCC](outputs/functions/BFCC.png) |
-| **ERB Filterbank**       | Equivalent Rectangular Bandwidth filter spectrogram        | Magma          | ![ERB](outputs/functions/ERB.png) |
-| **ERB-FCC**              | ERB-based Frequency Cepstral Coefficients                  | Rainbow        | ![ERB FCC](outputs/functions/ERB_fcc.png) |
-| **CHIRP Filterbank**     | Chirp-scale filter spectrogram                             | Cividis        | ![Chirp](outputs/functions/CHIRP.png) |
-| **CHIRP-FCC**            | Chirp-scale Frequency Cepstral Coefficients                | Rainbow        | ![Chirp FCC](outputs/functions/CHIRP_fcc.png) |
-| **Cambridge ERB-Rate**   | Cochlear-inspired ERB-rate (Glasberg-Moore) visualization  | Turbo          | ![CAM](outputs/functions/CAM.png) |
+| **STFT Spectrogram**     | Raw Short-Time Fourier Transform magnitudes                | ![STFT](outputs/functions/stft.png) |
+| **Mel Filterbank**       | 256-filter Mel-scale spectrogram                             | ![Mel](outputs/functions/mel.png) |
+| **MFCC**                 | 128 Mel-Frequency Cepstral Coefficients                    | ![MFCC](outputs/functions/mfcc.png) |
+| **Bark Filterbank**      | Bark-scale filter spectrogram                             | ![Bark](outputs/functions/BARK.png) |
+| **BFCC**                 | Bark-scale Frequency Cepstral Coefficients                 | ![BFCC](outputs/functions/BFCC.png) |
+| **ERB Filterbank**       | Equivalent Rectangular Bandwidth filter spectrogram        | ![ERB](outputs/functions/ERB.png) |
+| **ERB-FCC**              | ERB-based Frequency Cepstral Coefficients                  | ![ERB FCC](outputs/functions/ERB_fcc.png) |
+| **CHIRP Filterbank**     | Chirp-scale filter spectrogram                            | ![Chirp](outputs/functions/CHIRP.png) |
+| **CHIRP-FCC**            | Chirp-scale Frequency Cepstral Coefficients                 | ![Chirp FCC](outputs/functions/CHIRP_fcc.png) |
+| **Cambridge ERB-Rate**   | Cochlear-inspired ERB-rate (Glasberg-Moore) visualization  | ![CAM](outputs/functions/CAM.png) |
 
 ---
 
