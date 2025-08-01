@@ -4,16 +4,52 @@
 
 ## ✨ Key Features
 
-- 🎧 **Audio I/O**: Reads WAV, AAC, MP3 etc. with auto-detection. [minimp3](https://github.com/lieff/minimp3) decodes MP3s as fast as minimp3 allows; other formats use [libsndfile](https://libsndfile.github.io/libsndfile/).
-- 📊 **Short-Time Fourier Transform (STFT)**: Uses FFTW with wisdom caching to plan FFTs. Still slower than Librosa for unknown reasons. Supports Hann, Hamming, Blackman, and more. Tweak window size, hop size, and frequency bounds freely.
-- 🔊 **Mel Spectrogram**: Dynamically builds Mel filter banks. Accelerated with BLAS (`cblas_sdot`) and OpenMP. Has optional dB scaling with branchless computation for speed—though aggressive tuning causes glitches.
-- 🧠 **Mel-Frequency Cepstral Coefficients (MFCC)**: Computes MFCCs using precomputed DCT coefficients and BLAS. OpenMP parallelization helps. Not blazing fast, but supports clean heatmap visualizations with custom colormaps.
-- 🖼️ **Visualization**: Outputs STFT, Mel spectrograms, and MFCCs as PNG heatmaps using [libheatmap](https://github.com/lucasb-eyer/libheatmap). Supports 🎨 **130 Colormap Variants**:
-  - 🎨 22 OpenCV-style colormaps
+- 🎧 **Audio I/O**  
+  Reads WAV, AAC, MP3, and more with automatic format detection.  
+  MP3s are decoded via [minimp3](https://github.com/lieff/minimp3); other formats use [libsndfile](https://libsndfile.github.io/libsndfile/).
+
+- 📊 **Short-Time Fourier Transform (STFT)**  
+  Uses FFTW with wisdom caching to plan FFTs efficiently.  
+  Slower than Librosa in some cases, but highly tunable: supports Hann, Hamming, Blackman windows, custom hop/window sizes, and frequency range control.
+
+- 🔊 **Filter Bank Spectrograms**  
+  Supports **generalized filter bank construction** using:
+  - `F_MEL` – Mel scale  
+  - `F_BARK` – Bark scale  
+  - `F_ERB` – Equivalent Rectangular Bandwidth  
+  - `F_CHIRP` – Chirp-based scale  
+  - `F_CAM` – Cambridge ERB-rate  
+  - `F_LOG10` – Logarithmic base-10 spacing  
+  
+  Built via `gen_filterbank(...)`, accelerated with OpenMP and BLAS (`cblas_sdot`).  
+  Includes optional decibel scaling (branchless) and built-in plotting of filter shapes for inspection and debugging.
+
+- 🧠 **Mel-Frequency Cepstral Coefficients (MFCC)**  
+  Computes MFCCs using precomputed DCT coefficients and BLAS operations.  
+  OpenMP-parallelized. Supports heatmap visualization with customizable colormaps.
+
+- 🖼️ **Visualization**  
+  Renders STFTs, filter bank spectrograms, and MFCCs as high-res PNG heatmaps using [libheatmap](https://github.com/lucasb-eyer/libheatmap).  
+  Comes with **130+ colormap variants**:
+  - 🎨 22 OpenCV-style colormaps  
   - 🌈 108 scientific colormaps (27 base × 4 variants: discrete, soft, mixed, mixed_exp)
-- ⏱️ **Benchmarking**: Microsecond-precision profiling for STFT, Mel, MFCC, and visualization. Ranked timing reports with color-coded bars show exactly where time is spent. Outputs JSON and raw data for further analysis.
-- ⚙️ **Performance Optimizations**: OpenMP parallelism, FFTW wisdom caching, BLAS matrix ops, and compiler flags (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO). Aligned memory helps—still not Librosa-tier, but close.
-- 🐦 **Applications**: Ideal for bioacoustics (e.g., bird calls: `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`), large-scale audio processing, ML feature extraction, and DSP research.
+
+- ⏱️ **Benchmarking**  
+  Microsecond-resolution timing for STFT, filter bank application, MFCC, and plotting.  
+  Includes ranked, color-coded bar graphs and outputs both raw and JSON-formatted logs for deeper analysis.
+
+- ⚙️ **Performance Optimizations**  
+  OpenMP parallelism, FFTW wisdom caching, BLAS matrix ops, and aggressive compiler flags  
+  (`-ffast-math`, `-march=native`, `-funroll-loops`, LTO).  
+  Aligned memory usage boosts SIMD throughput. Not yet Librosa-fast—but getting there.
+
+- 🐦 **Applications**  
+  Ideal for:
+  - Bioacoustics (e.g., bird call analysis — `tests/files/black_woodpecker.wav`, `tests/files/173.mp3`)
+  - Machine learning feature extraction  
+  - Batch audio pipelines  
+  - Digital signal processing research
+
 
 ## 💡 Motivation
 
